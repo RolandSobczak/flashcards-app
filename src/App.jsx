@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react'
 import LatexContent from './LatexContent'
+import TasksView from './TasksView'
 import './App.css'
 
 const BUILT_IN_SETS = [
@@ -136,7 +137,7 @@ export default function App() {
   const [knownIds, setKnownIds] = useState(new Set())
   const [queue, setQueue] = useState([])
   const [currentIdx, setCurrentIdx] = useState(0)
-  const [phase, setPhase] = useState('upload') // upload | study | roundDone
+  const [phase, setPhase] = useState('upload') // upload | study | roundDone | tasks
   const [setName, setSetName] = useState('')
   const [dragOver, setDragOver] = useState(false)
   const fileRef = useRef()
@@ -198,7 +199,7 @@ export default function App() {
     advance(knownIds, queue, currentIdx)
   }
 
-  function advance(known, q, idx) {
+  function advance(_known, q, idx) {
     const next = idx + 1
     if (next >= q.length) {
       setPhase('roundDone')
@@ -230,7 +231,6 @@ export default function App() {
 
   const cardById = id => cards.find(c => c.id === id)
 
-  const remaining = queue.length - knownIds.size
   const progressPct = cards.length
     ? Math.round((knownIds.size / cards.length) * 100)
     : 0
@@ -240,12 +240,12 @@ export default function App() {
       <div className="header">
         <div>
           <h1>Fiszki</h1>
-          {phase !== 'upload' && setName && (
+          {phase !== 'upload' && phase !== 'tasks' && setName && (
             <div className="set-name">{setName}</div>
           )}
         </div>
         <div className="header-actions">
-          {phase !== 'upload' && (
+          {phase !== 'upload' && phase !== 'tasks' && (
             <button className="btn-secondary" onClick={handleLoadNew}>
               Wczytaj nowe
             </button>
@@ -268,6 +268,19 @@ export default function App() {
                   <span className="set-count">{set.cards} wzorów</span>
                 </button>
               ))}
+            </div>
+          </div>
+
+          <div className="menu-divider">
+            <span>zadania</span>
+          </div>
+
+          <div className="menu-section">
+            <div className="menu-sets">
+              <button className="set-card set-card-tasks" onClick={() => setPhase('tasks')}>
+                <span className="set-label">Algebra Boole'a</span>
+                <span className="set-count">zadania otwarte</span>
+              </button>
             </div>
           </div>
 
@@ -295,7 +308,11 @@ export default function App() {
         </div>
       )}
 
-      {phase !== 'upload' && (
+      {phase === 'tasks' && (
+        <TasksView onBack={() => setPhase('upload')} />
+      )}
+
+      {phase !== 'upload' && phase !== 'tasks' && (
         <div className="stats-bar">
           <div className="stat">
             Karta <strong>{Math.min(currentIdx + 1, queue.length)}</strong> / <strong>{queue.length}</strong>

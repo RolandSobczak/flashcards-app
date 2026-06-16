@@ -1,0 +1,127 @@
+[
+  {
+    "id": 1,
+    "title": "Uproszczenie do XOR — typ I (AND wewnątrz)",
+    "question": "Uprość wyrażenie korzystając z praw De Morgana:\n$$\\overline{\\overline{A \\cdot \\bar{B}} \\cdot \\overline{\\bar{A} \\cdot B}}$$",
+    "variables": ["A", "B"],
+    "answer": "A \\oplus B",
+    "steps": [
+      {
+        "law": "Prawo De Morgana (negacja iloczynu): $\\overline{X \\cdot Y} = \\bar{X} + \\bar{Y}$",
+        "expr": "$$= \\overline{\\overline{A \\cdot \\bar{B}}} + \\overline{\\overline{\\bar{A} \\cdot B}}$$"
+      },
+      {
+        "law": "Prawo podwójnej negacji: $\\overline{\\overline{X}} = X$",
+        "expr": "$$= (A \\cdot \\bar{B}) + (\\bar{A} \\cdot B)$$"
+      },
+      {
+        "law": "Definicja XOR: $A \\oplus B \\triangleq A\\bar{B} + \\bar{A}B$",
+        "expr": "$$= A \\oplus B$$"
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "title": "Uproszczenie do XNOR — typ I (AND wewnątrz)",
+    "question": "Uprość wyrażenie korzystając z praw De Morgana:\n$$\\overline{\\overline{A \\cdot B} \\cdot \\overline{\\bar{A} \\cdot \\bar{B}}}$$",
+    "variables": ["A", "B"],
+    "answer": "A \\odot B",
+    "steps": [
+      {
+        "law": "Prawo De Morgana (negacja iloczynu): $\\overline{X \\cdot Y} = \\bar{X} + \\bar{Y}$",
+        "expr": "$$= \\overline{\\overline{A \\cdot B}} + \\overline{\\overline{\\bar{A} \\cdot \\bar{B}}}$$"
+      },
+      {
+        "law": "Prawo podwójnej negacji: $\\overline{\\overline{X}} = X$",
+        "expr": "$$= (A \\cdot B) + (\\bar{A} \\cdot \\bar{B})$$"
+      },
+      {
+        "law": "Definicja XNOR: $A \\odot B \\triangleq AB + \\bar{A}\\bar{B}$",
+        "expr": "$$= A \\odot B$$"
+      }
+    ]
+  },
+  {
+    "id": 3,
+    "title": "Uproszczenie do XOR — typ II (iloczyn sum)",
+    "question": "Uprość wyrażenie korzystając z praw De Morgana:\n$$\\overline{A \\cdot B} \\cdot \\overline{\\bar{A} \\cdot \\bar{B}}$$",
+    "variables": ["A", "B"],
+    "answer": "A \\oplus B",
+    "steps": [
+      {
+        "law": "De Morgan na każdym czynniku: $\\overline{X \\cdot Y} = \\bar{X} + \\bar{Y}$",
+        "expr": "$$= (\\bar{A} + \\bar{B}) \\cdot (A + B)$$"
+      },
+      {
+        "law": "Rozwinięcie iloczynu (rozdzielność $\\cdot$ względem $+$)",
+        "expr": "$$= \\bar{A} \\cdot A + \\bar{A} \\cdot B + \\bar{B} \\cdot A + \\bar{B} \\cdot B$$"
+      },
+      {
+        "law": "Prawo komplementarności: $X \\cdot \\bar{X} = 0$",
+        "expr": "$$= 0 + \\bar{A}B + A\\bar{B} + 0 = A\\bar{B} + \\bar{A}B$$"
+      },
+      {
+        "law": "Definicja XOR: $A \\oplus B \\triangleq A\\bar{B} + \\bar{A}B$",
+        "expr": "$$= A \\oplus B$$"
+      }
+    ]
+  },
+  {
+    "id": 4,
+    "title": "Uproszczenie do XNOR — typ II (OR wewnątrz)",
+    "question": "Uprość wyrażenie korzystając z praw De Morgana:\n$$\\overline{\\overline{A + \\bar{B}} + \\overline{\\bar{A} + B}}$$",
+    "variables": ["A", "B"],
+    "answer": "A \\odot B",
+    "steps": [
+      {
+        "law": "De Morgan (negacja sumy): $\\overline{X + Y} = \\bar{X} \\cdot \\bar{Y}$",
+        "expr": "$$= \\overline{\\overline{A + \\bar{B}}} \\cdot \\overline{\\overline{\\bar{A} + B}}$$"
+      },
+      {
+        "law": "Prawo podwójnej negacji: $\\overline{\\overline{X}} = X$",
+        "expr": "$$= (A + \\bar{B}) \\cdot (\\bar{A} + B)$$"
+      },
+      {
+        "law": "Rozwinięcie iloczynu",
+        "expr": "$$= A\\bar{A} + AB + \\bar{B}\\bar{A} + \\bar{B}B$$"
+      },
+      {
+        "law": "Prawo komplementarności: $X \\cdot \\bar{X} = 0$",
+        "expr": "$$= 0 + AB + \\bar{A}\\bar{B} + 0$$"
+      },
+      {
+        "law": "Definicja XNOR: $A \\odot B \\triangleq AB + \\bar{A}\\bar{B}$",
+        "expr": "$$= A \\odot B$$"
+      }
+    ]
+  },
+  {
+    "id": 5,
+    "title": "Negacja XOR = XNOR",
+    "question": "Uprość wyrażenie korzystając z praw De Morgana:\n$$\\overline{A \\oplus B}$$",
+    "variables": ["A", "B"],
+    "answer": "A \\odot B",
+    "steps": [
+      {
+        "law": "Rozwijamy XOR: $A \\oplus B = A\\bar{B} + \\bar{A}B$",
+        "expr": "$$= \\overline{A\\bar{B} + \\bar{A}B}$$"
+      },
+      {
+        "law": "De Morgan (negacja sumy): $\\overline{X + Y} = \\bar{X} \\cdot \\bar{Y}$",
+        "expr": "$$= \\overline{A\\bar{B}} \\cdot \\overline{\\bar{A}B}$$"
+      },
+      {
+        "law": "De Morgan na każdym czynniku: $\\overline{XY} = \\bar{X} + \\bar{Y}$",
+        "expr": "$$= (\\bar{A} + B)(A + \\bar{B})$$"
+      },
+      {
+        "law": "Rozwinięcie",
+        "expr": "$$= \\bar{A}A + \\bar{A}\\bar{B} + BA + B\\bar{B} = AB + \\bar{A}\\bar{B}$$"
+      },
+      {
+        "law": "Definicja XNOR: $A \\odot B \\triangleq AB + \\bar{A}\\bar{B}$",
+        "expr": "$$= A \\odot B$$"
+      }
+    ]
+  }
+]

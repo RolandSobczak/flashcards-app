@@ -23,6 +23,9 @@ dist-ssr
 *.sln
 *.sw?
 
-# Flashcard sets — przechowywane lokalnie, nie w repo
+# Flashcard sets i zadania — przechowywane lokalnie, nie w repo
 public/*.json
 scripts/
+backend/exercises.json
+backend/__pycache__/
+backend/.venv/
