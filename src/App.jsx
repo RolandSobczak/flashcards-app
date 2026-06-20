@@ -15,6 +15,19 @@ const BUILT_IN_SETS = [
   { label: 'printf — specyfikatory formatu', file: '/printf_specifiers.json', cards: 22 },
 ]
 
+const CONTROL_SETS = [
+  { label: 'Transformata Laplace\'a i Z', file: '/control_1_laplace.json', cards: 12 },
+  { label: 'Transmitancja i schematy blokowe', file: '/control_2_transmitancja.json', cards: 10 },
+  { label: 'Charakterystyki Bodego i Nicholsa', file: '/control_3_bode.json', cards: 9 },
+  { label: 'Stabilność — Nyquist, Hurwitz, Jury', file: '/control_4_stabilnosc.json', cards: 8 },
+  { label: 'Pierwiastkowe miejsce geometryczne', file: '/control_5_pmg.json', cards: 9 },
+  { label: 'Jakość regulacji i odpowiedzi skokowe', file: '/control_6_jakosc.json', cards: 11 },
+  { label: 'Regulatory P/PI/PID', file: '/control_7_regulatory.json', cards: 8 },
+  { label: 'Układy nieliniowe i rozmyte', file: '/control_8_nieliniowe.json', cards: 8 },
+  { label: 'Przestrzeń stanu', file: '/control_9_przestrzen.json', cards: 4 },
+  { label: 'Układy dyskretne', file: '/control_10_dyskretne.json', cards: 14 },
+]
+
 function shuffle(arr) {
   const a = [...arr]
   for (let i = a.length - 1; i > 0; i--) {
@@ -256,7 +269,7 @@ export default function App() {
       {phase === 'upload' && (
         <div className="menu">
           <div className="menu-section">
-            <div className="menu-section-label">Gotowe zestawy</div>
+            <div className="menu-section-label">Buck-Boost i inne</div>
             <div className="menu-sets">
               {BUILT_IN_SETS.map(set => (
                 <button
@@ -266,6 +279,25 @@ export default function App() {
                 >
                   <span className="set-label">{set.label}</span>
                   <span className="set-count">{set.cards} wzorów</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="menu-divider">
+            <span>podstawy sterowania</span>
+          </div>
+
+          <div className="menu-section">
+            <div className="menu-sets">
+              {CONTROL_SETS.map(set => (
+                <button
+                  key={set.file}
+                  className="set-card set-card-control"
+                  onClick={() => loadBuiltIn(set)}
+                >
+                  <span className="set-label">{set.label}</span>
+                  <span className="set-count">{set.cards} fiszek</span>
                 </button>
               ))}
             </div>

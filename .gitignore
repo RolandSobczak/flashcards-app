@@ -29,3 +29,5 @@ scripts/
 backend/exercises.json
 backend/__pycache__/
 backend/.venv/
+
+public/horla_figures/

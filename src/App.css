@@ -389,6 +389,16 @@
   background: #221535;
 }
 
+.set-card-control {
+  border-color: #1a3a2a;
+  background: #0f1e18;
+}
+
+.set-card-control:hover {
+  border-color: #2a9d5c;
+  background: #152a1e;
+}
+
 /* ── Tasks view ── */
 .tasks-view {
   display: flex;
