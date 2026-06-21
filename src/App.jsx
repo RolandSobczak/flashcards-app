@@ -26,6 +26,7 @@ const CONTROL_SETS = [
   { label: 'Układy nieliniowe i rozmyte', file: '/control_8_nieliniowe.json', cards: 8 },
   { label: 'Przestrzeń stanu', file: '/control_9_przestrzen.json', cards: 4 },
   { label: 'Układy dyskretne', file: '/control_10_dyskretne.json', cards: 14 },
+  { label: 'Zadania egzaminacyjne (Z1–Z74)', file: '/control_zadania.json', cards: 74 },
 ]
 
 function shuffle(arr) {
