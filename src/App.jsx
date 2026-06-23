@@ -29,6 +29,8 @@ const CONTROL_SETS = [
   { label: 'Zadania egzaminacyjne (Z1–Z74)', file: '/control_zadania.json', cards: 74 },
 ]
 
+const CHUNK_THRESHOLD = 30
+
 function shuffle(arr) {
   const a = [...arr]
   for (let i = a.length - 1; i > 0; i--) {
@@ -46,6 +48,30 @@ function useImageUrl(src) {
   }
   // treat as base64 PNG if no prefix
   return `data:image/png;base64,${src}`
+}
+
+function parseMCQ(front) {
+  const lines = front.split('\n')
+  const optionRe = /^([a-d])\)\s*(.+)$/
+  const options = []
+  const questionLines = []
+
+  for (const line of lines) {
+    const m = line.trim().match(optionRe)
+    if (m) {
+      options.push({ letter: m[1], text: m[2] })
+    } else if (options.length === 0 && line.trim()) {
+      questionLines.push(line)
+    }
+  }
+
+  if (options.length < 2) return null
+  return { question: questionLines.join('\n').trim(), options }
+}
+
+function getCorrectLetter(back) {
+  const m = back.match(/^\*\*([a-d])\)/)
+  return m ? m[1] : null
 }
 
 function CardFace({ side, card }) {
@@ -76,9 +102,215 @@ function CardFace({ side, card }) {
   )
 }
 
+function MCQCard({ card, mcq, correctLetter, onKnow, onSkip }) {
+  const [selected, setSelected] = useState(null)
+  const [skipped, setSkipped] = useState(false)
+  const imgUrl = useImageUrl(card.frontImage)
+  const backImgUrl = useImageUrl(card.backImage)
+
+  const revealed = selected !== null || skipped
+  const isCorrect = selected === correctLetter
+
+  function handleOption(letter) {
+    if (revealed) return
+    setSelected(letter)
+  }
+
+  function handleKnow() {
+    setSelected(null)
+    setSkipped(false)
+    onKnow()
+  }
+
+  function handleNext() {
+    setSelected(null)
+    setSkipped(false)
+    onSkip()
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div className="card-face card-front" style={{ cursor: 'default' }}>
+        <span className="card-label">Pytanie</span>
+        <div className="card-content">
+          <LatexContent text={mcq.question} />
+        </div>
+        {imgUrl && (
+          <img className="card-image" src={imgUrl} alt="Illustration" />
+        )}
+      </div>
+
+      <div className="mcq-options">
+        {mcq.options.map(({ letter, text }) => {
+          let cls = 'mcq-btn'
+          if (revealed) {
+            if (letter === correctLetter) cls += ' mcq-correct'
+            else if (letter === selected) cls += ' mcq-wrong'
+            else cls += ' mcq-dim'
+          }
+          return (
+            <button key={letter} className={cls} onClick={() => handleOption(letter)} disabled={revealed}>
+              <span className="mcq-letter">{letter})</span>
+              <span className="mcq-text"><LatexContent text={text} /></span>
+            </button>
+          )
+        })}
+      </div>
+
+      {revealed && (
+        <>
+          {selected !== null && (
+            <div className={`result ${isCorrect ? 'result-correct' : 'result-wrong'}`}>
+              {isCorrect ? '✓ Poprawnie!' : `✗ Niepoprawnie — prawidłowa odpowiedź: ${correctLetter})`}
+            </div>
+          )}
+          <div className="card-face card-back" style={{ cursor: 'default', minHeight: 'auto', paddingTop: 24 }}>
+            <span className="card-label">Wyjaśnienie</span>
+            <div className="card-content" style={{ fontSize: 16, textAlign: 'left' }}>
+              <LatexContent text={card.back} />
+            </div>
+            {card.backImage && (
+              <img className="card-image" src={backImgUrl} alt="Back illustration" />
+            )}
+          </div>
+        </>
+      )}
+
+      <div className="card-actions">
+        {revealed ? (
+          <button
+            className={isCorrect ? 'btn-know' : 'btn-skip'}
+            onClick={isCorrect ? handleKnow : handleNext}
+          >
+            Następne pytanie →
+          </button>
+        ) : (
+          <>
+            <button className="btn-skip" onClick={() => setSkipped(true)}>
+              Jeszcze nie umiem
+            </button>
+            <button className="btn-know" disabled>
+              Umiem ✓
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function MatchingCard({ card, matching, onKnow, onSkip }) {
+  const [rightOrder, setRightOrder] = useState(() => shuffle(matching.pairs.map((_, i) => i)))
+  const [checked, setChecked] = useState(false)
+  const [skipped, setSkipped] = useState(false)
+  const imgUrl = useImageUrl(card.frontImage)
+  const backImgUrl = useImageUrl(card.backImage)
+
+  const revealed = checked || skipped
+  const isAllCorrect = checked && rightOrder.every((v, i) => v === i)
+
+  function moveUp(idx) {
+    setRightOrder(prev => {
+      const next = [...prev]
+      ;[next[idx - 1], next[idx]] = [next[idx], next[idx - 1]]
+      return next
+    })
+  }
+
+  function moveDown(idx) {
+    setRightOrder(prev => {
+      const next = [...prev]
+      ;[next[idx + 1], next[idx]] = [next[idx], next[idx + 1]]
+      return next
+    })
+  }
+
+  function handleSkipReveal() {
+    setRightOrder(matching.pairs.map((_, i) => i))
+    setSkipped(true)
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div className="card-face card-front" style={{ cursor: 'default' }}>
+        <span className="card-label">Pytanie</span>
+        <div className="card-content">
+          <LatexContent text={card.front} />
+        </div>
+        {imgUrl && <img className="card-image" src={imgUrl} alt="Illustration" />}
+      </div>
+
+      <div className="matching-table">
+        {matching.pairs.map(([leftLabel], i) => {
+          const rightIdx = rightOrder[i]
+          const rightLabel = matching.pairs[rightIdx][1]
+          const rowCorrect = revealed && rightIdx === i
+          const rowWrong = checked && rightIdx !== i
+          return (
+            <div key={i} className={`matching-row${rowCorrect ? ' match-correct' : rowWrong ? ' match-wrong' : ''}`}>
+              <div className="matching-left"><LatexContent text={leftLabel} /></div>
+              <div className="matching-sep">→</div>
+              <div className="matching-right"><LatexContent text={rightLabel} /></div>
+              {!revealed && (
+                <div className="matching-controls">
+                  <button className="matching-move-btn" onClick={() => moveUp(i)} disabled={i === 0}>↑</button>
+                  <button className="matching-move-btn" onClick={() => moveDown(i)} disabled={i === rightOrder.length - 1}>↓</button>
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+
+      {checked && (
+        <div className={`result ${isAllCorrect ? 'result-correct' : 'result-wrong'}`}>
+          {isAllCorrect ? '✓ Poprawnie!' : '✗ Niepoprawnie'}
+        </div>
+      )}
+
+      {revealed && (
+        <div className="card-face card-back" style={{ cursor: 'default', minHeight: 'auto', paddingTop: 24 }}>
+          <span className="card-label">Wyjaśnienie</span>
+          <div className="card-content" style={{ fontSize: 16, textAlign: 'left' }}>
+            <LatexContent text={card.back} />
+          </div>
+          {backImgUrl && <img className="card-image" src={backImgUrl} alt="Back illustration" />}
+        </div>
+      )}
+
+      <div className="card-actions">
+        {revealed ? (
+          <button
+            className={isAllCorrect ? 'btn-know' : 'btn-skip'}
+            onClick={isAllCorrect ? onKnow : onSkip}
+          >
+            Następne pytanie →
+          </button>
+        ) : (
+          <>
+            <button className="btn-skip" onClick={handleSkipReveal}>Jeszcze nie umiem</button>
+            <button className="btn-primary" onClick={() => setChecked(true)}>Sprawdź</button>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function FlashCard({ card, onKnow, onSkip }) {
   const [flipped, setFlipped] = useState(false)
   const [animating, setAnimating] = useState(false)
+
+  const mcq = parseMCQ(card.front)
+  const correctLetter = mcq ? getCorrectLetter(card.back) : null
+
+  if (card.matching) {
+    return <MatchingCard card={card} matching={card.matching} onKnow={onKnow} onSkip={onSkip} />
+  }
+
+  if (mcq && correctLetter) {
+    return <MCQCard card={card} mcq={mcq} correctLetter={correctLetter} onKnow={onKnow} onSkip={onSkip} />
+  }
 
   function handleFlip() {
     if (animating) return
@@ -120,9 +352,51 @@ function FlashCard({ card, onKnow, onSkip }) {
   )
 }
 
-function RoundComplete({ total, knownCount, remainingCount, onNextRound, onReset }) {
-  const allDone = remainingCount === 0
+function RoundComplete({
+  total, knownCount, remainingCount,
+  chunkMode, chunkIndex, chunksCount, chunkDone,
+  chunkKnown, chunkRemaining, chunkTotal,
+  onNextRound, onNextChunk, onReset,
+}) {
+  if (chunkMode && chunkDone) {
+    const isLast = chunkIndex + 1 >= chunksCount
+    return (
+      <div className="round-complete">
+        <div className="emoji">{isLast ? '🎓' : '✅'}</div>
+        <h2>{isLast ? 'Wszystkie partie opanowane!' : `Partia ${chunkIndex + 1} opanowana!`}</h2>
+        <p>
+          {isLast
+            ? `Opanowałeś wszystkie ${chunksCount} partie. Czas na pełny przegląd!`
+            : `Przejdź do partii ${chunkIndex + 2} z ${chunksCount}. Łącznie opanowano ${knownCount}/${total}.`}
+        </p>
+        <div className="actions">
+          {isLast
+            ? <button className="btn-primary" onClick={onNextChunk}>Pełny zestaw ({total} kart)</button>
+            : <button className="btn-primary" onClick={onNextChunk}>Partia {chunkIndex + 2} →</button>
+          }
+          <button className="btn-secondary" onClick={onReset}>Zacznij od nowa</button>
+        </div>
+      </div>
+    )
+  }
 
+  if (chunkMode) {
+    return (
+      <div className="round-complete">
+        <div className="emoji">✅</div>
+        <h2>Koniec rundy — Partia {chunkIndex + 1}/{chunksCount}</h2>
+        <p>Opanowano {chunkKnown} z {chunkTotal} w tej partii. Pozostało jeszcze {chunkRemaining}.</p>
+        <div className="actions">
+          <button className="btn-primary" onClick={onNextRound}>
+            Następna runda ({chunkRemaining})
+          </button>
+          <button className="btn-secondary" onClick={onReset}>Zacznij od nowa</button>
+        </div>
+      </div>
+    )
+  }
+
+  const allDone = remainingCount === 0
   return (
     <div className="round-complete">
       <div className="emoji">{allDone ? '🎉' : '✅'}</div>
@@ -151,10 +425,15 @@ export default function App() {
   const [knownIds, setKnownIds] = useState(new Set())
   const [queue, setQueue] = useState([])
   const [currentIdx, setCurrentIdx] = useState(0)
-  const [phase, setPhase] = useState('upload') // upload | study | roundDone | tasks
+  const [phase, setPhase] = useState('upload') // upload | chunkSetup | study | roundDone | tasks
   const [setName, setSetName] = useState('')
   const [dragOver, setDragOver] = useState(false)
   const fileRef = useRef()
+
+  const [chunkMode, setChunkMode] = useState(false)
+  const [chunkSize, setChunkSize] = useState(10)
+  const [chunks, setChunks] = useState([])     // array of card-ID arrays
+  const [chunkIndex, setChunkIndex] = useState(0)
 
   function applyData(data, name = '') {
     const normalized = data.map((c, i) => ({
@@ -167,10 +446,61 @@ export default function App() {
     }))
     setCards(normalized)
     setKnownIds(new Set())
-    setQueue(shuffle(normalized.map(c => c.id)))
-    setCurrentIdx(0)
+    setChunkMode(false)
+    setChunks([])
+    setChunkIndex(0)
     setSetName(name)
+    if (normalized.length >= CHUNK_THRESHOLD) {
+      setPhase('chunkSetup')
+    } else {
+      setQueue(shuffle(normalized.map(c => c.id)))
+      setCurrentIdx(0)
+      setPhase('study')
+    }
+  }
+
+  function buildChunks(cardList, size) {
+    const ids = cardList.map(c => c.id)
+    const result = []
+    for (let i = 0; i < ids.length; i += size) result.push(ids.slice(i, i + size))
+    return result
+  }
+
+  function startChunkedStudy() {
+    const newChunks = buildChunks(cards, chunkSize)
+    setChunks(newChunks)
+    setChunkIndex(0)
+    setChunkMode(true)
+    setKnownIds(new Set())
+    setQueue(shuffle(newChunks[0]))
+    setCurrentIdx(0)
     setPhase('study')
+  }
+
+  function startFullStudy() {
+    setChunkMode(false)
+    setChunks([])
+    setKnownIds(new Set())
+    setQueue(shuffle(cards.map(c => c.id)))
+    setCurrentIdx(0)
+    setPhase('study')
+  }
+
+  function handleNextChunk() {
+    const next = chunkIndex + 1
+    if (next >= chunks.length) {
+      // All chunks done — start full review with reset
+      setChunkMode(false)
+      setKnownIds(new Set())
+      setQueue(shuffle(cards.map(c => c.id)))
+      setCurrentIdx(0)
+      setPhase('study')
+    } else {
+      setChunkIndex(next)
+      setQueue(shuffle(chunks[next]))
+      setCurrentIdx(0)
+      setPhase('study')
+    }
   }
 
   function loadFile(file) {
@@ -223,17 +553,29 @@ export default function App() {
   }
 
   function handleNextRound() {
-    const remaining = cards.filter(c => !knownIds.has(c.id)).map(c => c.id)
-    setQueue(shuffle(remaining))
+    if (chunkMode) {
+      const remaining = chunks[chunkIndex].filter(id => !knownIds.has(id))
+      setQueue(shuffle(remaining))
+    } else {
+      setQueue(shuffle(cards.filter(c => !knownIds.has(c.id)).map(c => c.id)))
+    }
     setCurrentIdx(0)
     setPhase('study')
   }
 
   function handleReset() {
-    setKnownIds(new Set())
-    setQueue(shuffle(cards.map(c => c.id)))
-    setCurrentIdx(0)
-    setPhase('study')
+    if (chunkMode) {
+      setPhase('chunkSetup')
+      setKnownIds(new Set())
+      setChunkMode(false)
+      setChunks([])
+      setChunkIndex(0)
+    } else {
+      setKnownIds(new Set())
+      setQueue(shuffle(cards.map(c => c.id)))
+      setCurrentIdx(0)
+      setPhase('study')
+    }
   }
 
   function handleLoadNew() {
@@ -241,6 +583,9 @@ export default function App() {
     setCards([])
     setKnownIds(new Set())
     setQueue([])
+    setChunkMode(false)
+    setChunks([])
+    setChunkIndex(0)
   }
 
   const cardById = id => cards.find(c => c.id === id)
@@ -248,6 +593,11 @@ export default function App() {
   const progressPct = cards.length
     ? Math.round((knownIds.size / cards.length) * 100)
     : 0
+
+  const currentChunkIds = chunkMode ? (chunks[chunkIndex] ?? []) : []
+  const chunkKnown = currentChunkIds.filter(id => knownIds.has(id)).length
+  const chunkRemaining = currentChunkIds.length - chunkKnown
+  const chunkDone = chunkMode && chunkRemaining === 0
 
   return (
     <div className="app">
@@ -259,9 +609,14 @@ export default function App() {
           )}
         </div>
         <div className="header-actions">
-          {phase !== 'upload' && phase !== 'tasks' && (
+          {phase !== 'upload' && phase !== 'tasks' && phase !== 'chunkSetup' && (
             <button className="btn-secondary" onClick={handleLoadNew}>
               Wczytaj nowe
+            </button>
+          )}
+          {phase === 'chunkSetup' && (
+            <button className="btn-secondary" onClick={handleLoadNew}>
+              ← Menu
             </button>
           )}
         </div>
@@ -345,11 +700,48 @@ export default function App() {
         <TasksView onBack={() => setPhase('upload')} />
       )}
 
-      {phase !== 'upload' && phase !== 'tasks' && (
+      {phase === 'chunkSetup' && (
+        <div className="chunk-setup">
+          <div className="chunk-setup-info">
+            <div className="chunk-setup-count">{cards.length} fiszek</div>
+            <p className="chunk-setup-desc">Duży zestaw — ucz się partiami lub od razu całość.</p>
+          </div>
+
+          <div className="chunk-option-box">
+            <div className="chunk-option-title">Nauka partiami</div>
+            <div className="chunk-option-desc">Po każdej partii przejdziesz do następnej.<br/>Na końcu — pełny przegląd całego zestawu.</div>
+            <div className="chunk-size-row">
+              <span className="chunk-size-label">Rozmiar partii:</span>
+              <div className="chunk-size-picker">
+                <button onClick={() => setChunkSize(s => Math.max(5, s - 5))}>−</button>
+                <span className="chunk-size-val">{chunkSize}</span>
+                <button onClick={() => setChunkSize(s => Math.min(cards.length, s + 5))}>+</button>
+              </div>
+              <span className="chunk-size-meta">
+                {Math.ceil(cards.length / chunkSize)} {Math.ceil(cards.length / chunkSize) === 1 ? 'partia' : 'partie/partii'}
+              </span>
+            </div>
+            <button className="btn-primary" onClick={startChunkedStudy}>
+              Zacznij partiami
+            </button>
+          </div>
+
+          <button className="btn-secondary chunk-full-btn" onClick={startFullStudy}>
+            Cały zestaw na raz ({cards.length} kart)
+          </button>
+        </div>
+      )}
+
+      {phase !== 'upload' && phase !== 'tasks' && phase !== 'chunkSetup' && (
         <div className="stats-bar">
           <div className="stat">
             Karta <strong>{Math.min(currentIdx + 1, queue.length)}</strong> / <strong>{queue.length}</strong>
           </div>
+          {chunkMode && (
+            <div className="stat stat-chunk">
+              Partia <strong>{chunkIndex + 1}</strong> / <strong>{chunks.length}</strong>
+            </div>
+          )}
           <div className="stat known">
             Opanowane <strong>{knownIds.size}</strong> / <strong>{cards.length}</strong>
           </div>
@@ -375,7 +767,15 @@ export default function App() {
           total={cards.length}
           knownCount={knownIds.size}
           remainingCount={cards.length - knownIds.size}
+          chunkMode={chunkMode}
+          chunkIndex={chunkIndex}
+          chunksCount={chunks.length}
+          chunkDone={chunkDone}
+          chunkKnown={chunkKnown}
+          chunkRemaining={chunkRemaining}
+          chunkTotal={currentChunkIds.length}
           onNextRound={handleNextRound}
+          onNextChunk={handleNextChunk}
           onReset={handleReset}
         />
       )}

@@ -376,6 +376,280 @@
   font-weight: 600;
 }
 
+/* ── MCQ options ── */
+.mcq-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mcq-btn {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  background: #1a1a28;
+  border: 1px solid #2e2e48;
+  border-radius: 12px;
+  padding: 12px 18px;
+  text-align: left;
+  transition: border-color 0.15s, background 0.15s;
+  cursor: pointer;
+}
+
+.mcq-btn:not(:disabled):hover {
+  background: #22223a;
+  border-color: #6366f1;
+}
+
+.mcq-btn:disabled {
+  cursor: default;
+}
+
+.mcq-letter {
+  font-size: 14px;
+  font-weight: 700;
+  color: #5a5a80;
+  flex-shrink: 0;
+  min-width: 20px;
+}
+
+.mcq-text {
+  font-size: 16px;
+  color: #d0d0f0;
+  line-height: 1.5;
+}
+
+.mcq-correct {
+  background: rgba(20, 83, 45, 0.35) !important;
+  border-color: #166534 !important;
+}
+
+.mcq-correct .mcq-letter {
+  color: #4ade80;
+}
+
+.mcq-correct .mcq-text {
+  color: #86efac;
+}
+
+.mcq-wrong {
+  background: rgba(127, 29, 29, 0.35) !important;
+  border-color: #7f1d1d !important;
+}
+
+.mcq-wrong .mcq-letter {
+  color: #f87171;
+}
+
+.mcq-wrong .mcq-text {
+  color: #fca5a5;
+}
+
+.mcq-dim {
+  opacity: 0.4;
+}
+
+/* ── Matching component ── */
+.matching-table {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.matching-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #1a1a28;
+  border: 1px solid #2e2e48;
+  border-radius: 12px;
+  padding: 10px 14px;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.match-correct {
+  background: rgba(20, 83, 45, 0.35);
+  border-color: #166534;
+}
+
+.match-wrong {
+  background: rgba(127, 29, 29, 0.35);
+  border-color: #7f1d1d;
+}
+
+.matching-left {
+  min-width: 36px;
+  font-size: 15px;
+  color: #9090b0;
+  font-weight: 600;
+}
+
+.matching-sep {
+  color: #4a4a6a;
+  font-size: 14px;
+}
+
+.matching-right {
+  flex: 1;
+  font-size: 15px;
+  color: #d0d0f0;
+}
+
+.matching-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-left: auto;
+}
+
+.matching-move-btn {
+  background: #16162a;
+  border: 1px solid #2e2e48;
+  border-radius: 6px;
+  color: #6060a0;
+  width: 30px;
+  height: 26px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: background 0.15s, color 0.15s;
+}
+
+.matching-move-btn:hover:not(:disabled) {
+  background: #22223a;
+  color: #e0e0f4;
+}
+
+.matching-move-btn:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+
+/* ── Chunk stat badge ── */
+.stat.stat-chunk {
+  border-color: #2a3a5a;
+  background: rgba(30, 50, 90, 0.4);
+}
+
+.stat.stat-chunk strong {
+  color: #93c5fd;
+}
+
+/* ══════════════════════════════════════════════════════
+   Chunk setup screen
+   ══════════════════════════════════════════════════════ */
+.chunk-setup {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 520px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.chunk-setup-info {
+  text-align: center;
+  padding: 8px 0 4px;
+}
+
+.chunk-setup-count {
+  font-size: 48px;
+  font-weight: 700;
+  color: #e2e2f0;
+  letter-spacing: -2px;
+  line-height: 1;
+}
+
+.chunk-setup-desc {
+  font-size: 14px;
+  color: #5a5a80;
+  margin-top: 6px;
+}
+
+.chunk-option-box {
+  background: #1a1a28;
+  border: 1px solid #2e2e48;
+  border-radius: 18px;
+  padding: 28px 28px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.chunk-option-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #e0e0f4;
+}
+
+.chunk-option-desc {
+  font-size: 13px;
+  color: #5a5a80;
+  line-height: 1.6;
+}
+
+.chunk-size-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.chunk-size-label {
+  font-size: 14px;
+  color: #9090b0;
+}
+
+.chunk-size-picker {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  border: 1px solid #2e2e48;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.chunk-size-picker button {
+  background: #16162a;
+  color: #9090b0;
+  border: none;
+  border-radius: 0;
+  padding: 8px 16px;
+  font-size: 18px;
+  line-height: 1;
+  transition: background 0.15s, color 0.15s;
+}
+
+.chunk-size-picker button:hover {
+  background: #22223a;
+  color: #e0e0f4;
+}
+
+.chunk-size-val {
+  font-size: 18px;
+  font-weight: 700;
+  color: #e0e0f4;
+  min-width: 36px;
+  text-align: center;
+  padding: 0 4px;
+  background: #1a1a28;
+}
+
+.chunk-size-meta {
+  font-size: 13px;
+  color: #4a4a6a;
+}
+
+.chunk-full-btn {
+  width: 100%;
+  text-align: center;
+  justify-content: center;
+  border-radius: 12px;
+  padding: 14px 20px;
+}
+
 /* ══════════════════════════════════════════════════════
    Tasks module
    ══════════════════════════════════════════════════════ */
