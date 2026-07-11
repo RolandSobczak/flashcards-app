@@ -5,6 +5,7 @@ import ChunkSetup from './components/ChunkSetup'
 import StatsBar from './components/StatsBar'
 import FlashCard from './components/FlashCard'
 import RoundComplete from './components/RoundComplete'
+import BrowseView from './components/BrowseView'
 import { shuffle } from './utils'
 import { CHUNK_THRESHOLD } from './constants'
 import './App.css'
@@ -14,8 +15,9 @@ export default function App() {
   const [knownIds, setKnownIds] = useState(new Set())
   const [queue, setQueue] = useState([])
   const [currentIdx, setCurrentIdx] = useState(0)
-  const [phase, setPhase] = useState('upload') // upload | chunkSetup | study | roundDone | tasks
+  const [phase, setPhase] = useState('upload') // upload | chunkSetup | study | roundDone | tasks | browse
   const [setName, setSetName] = useState('')
+  const [browseOrigin, setBrowseOrigin] = useState('study')
 
   const [chunkMode, setChunkMode] = useState(false)
   const [chunkSize, setChunkSize] = useState(10)
@@ -136,6 +138,15 @@ export default function App() {
     }
   }
 
+  function openBrowse() {
+    setBrowseOrigin(phase)
+    setPhase('browse')
+  }
+
+  function closeBrowse() {
+    setPhase(browseOrigin)
+  }
+
   function handleLoadNew() {
     setPhase('upload')
     setCards([])
@@ -153,7 +164,8 @@ export default function App() {
   const chunkRemaining = currentChunkIds.length - chunkKnown
   const chunkDone = chunkMode && chunkRemaining === 0
 
-  const studyVisible = phase !== 'upload' && phase !== 'tasks' && phase !== 'chunkSetup'
+  const studyVisible = phase !== 'upload' && phase !== 'tasks' && phase !== 'chunkSetup' && phase !== 'browse'
+  const hasLoadedSet = phase !== 'upload' && phase !== 'tasks' && cards.length > 0
 
   return (
     <div className="app">
@@ -165,6 +177,9 @@ export default function App() {
           )}
         </div>
         <div className="header-actions">
+          {hasLoadedSet && phase !== 'browse' && (
+            <button className="btn-secondary" onClick={openBrowse}>Wszystkie karty</button>
+          )}
           {studyVisible && (
             <button className="btn-secondary" onClick={handleLoadNew}>Wczytaj nowe</button>
           )}
@@ -180,6 +195,10 @@ export default function App() {
 
       {phase === 'tasks' && (
         <TasksView onBack={() => setPhase('upload')} />
+      )}
+
+      {phase === 'browse' && (
+        <BrowseView cards={cards} onBack={closeBrowse} />
       )}
 
       {phase === 'chunkSetup' && (

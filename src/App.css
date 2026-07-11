@@ -527,6 +527,97 @@
   cursor: default;
 }
 
+/* ── Browse view ── */
+.browse-view {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.browse-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.browse-count {
+  font-size: 13px;
+  color: #5a5a80;
+}
+
+.browse-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.browse-card {
+  background: #1a1a28;
+  border: 1px solid #2e2e48;
+  border-radius: 14px;
+  padding: 18px 20px;
+  display: flex;
+  gap: 14px;
+}
+
+.browse-card-index {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #16162a;
+  color: #6060a0;
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.browse-card-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.browse-card-front {
+  font-size: 16px;
+  color: #e2e2f0;
+  line-height: 1.6;
+  white-space: pre-line;
+}
+
+.browse-card-back {
+  font-size: 15px;
+  color: #9090b0;
+  line-height: 1.6;
+  white-space: pre-line;
+}
+
+.browse-card-divider {
+  height: 1px;
+  background: #2a2a42;
+}
+
+.browse-matching-list,
+.browse-mcq-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+  color: #9090b0;
+}
+
+.browse-mcq-correct {
+  color: #4ade80;
+  font-weight: 500;
+}
+
 /* ── Chunk stat badge ── */
 .stat.stat-chunk {
   border-color: #2a3a5a;
