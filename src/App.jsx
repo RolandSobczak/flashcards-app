@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import TasksView from './TasksView'
 import Menu from './components/Menu'
 import ChunkSetup from './components/ChunkSetup'
@@ -8,21 +8,31 @@ import RoundComplete from './components/RoundComplete'
 import BrowseView from './components/BrowseView'
 import { shuffle } from './utils'
 import { CHUNK_THRESHOLD } from './constants'
+import { loadSession, saveSession } from './persistence'
 import './App.css'
 
 export default function App() {
-  const [cards, setCards] = useState([])
-  const [knownIds, setKnownIds] = useState(new Set())
-  const [queue, setQueue] = useState([])
-  const [currentIdx, setCurrentIdx] = useState(0)
-  const [phase, setPhase] = useState('upload') // upload | chunkSetup | study | roundDone | tasks | browse
-  const [setName, setSetName] = useState('')
-  const [browseOrigin, setBrowseOrigin] = useState('study')
+  const [persisted] = useState(loadSession)
 
-  const [chunkMode, setChunkMode] = useState(false)
-  const [chunkSize, setChunkSize] = useState(10)
-  const [chunks, setChunks] = useState([])
-  const [chunkIndex, setChunkIndex] = useState(0)
+  const [cards, setCards] = useState(persisted?.cards ?? [])
+  const [knownIds, setKnownIds] = useState(() => new Set(persisted?.knownIds ?? []))
+  const [queue, setQueue] = useState(persisted?.queue ?? [])
+  const [currentIdx, setCurrentIdx] = useState(persisted?.currentIdx ?? 0)
+  const [phase, setPhase] = useState(persisted?.phase ?? 'upload') // upload | chunkSetup | study | roundDone | tasks | browse
+  const [setName, setSetName] = useState(persisted?.setName ?? '')
+  const [browseOrigin, setBrowseOrigin] = useState(persisted?.browseOrigin ?? 'study')
+
+  const [chunkMode, setChunkMode] = useState(persisted?.chunkMode ?? false)
+  const [chunkSize, setChunkSize] = useState(persisted?.chunkSize ?? 10)
+  const [chunks, setChunks] = useState(persisted?.chunks ?? [])
+  const [chunkIndex, setChunkIndex] = useState(persisted?.chunkIndex ?? 0)
+
+  useEffect(() => {
+    saveSession({
+      cards, knownIds: Array.from(knownIds), queue, currentIdx, phase, setName,
+      browseOrigin, chunkMode, chunkSize, chunks, chunkIndex,
+    })
+  }, [cards, knownIds, queue, currentIdx, phase, setName, browseOrigin, chunkMode, chunkSize, chunks, chunkIndex])
 
   function applyData(data, name = '') {
     const normalized = data.map((c, i) => ({
