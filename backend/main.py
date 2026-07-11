@@ -1,5 +1,6 @@
 import json
 import re
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
@@ -8,9 +9,19 @@ from pydantic import BaseModel
 from sympy import symbols, Not
 from sympy.logic.boolalg import Xor, Equivalent, simplify_logic
 
+from . import storage
+from .sets import router as sets_router
+
 EXERCISES_FILE = Path(__file__).parent / "exercises.json"
 
-app = FastAPI(title="Flashcards – Tasks API")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    storage.ensure_bucket()
+    yield
+
+
+app = FastAPI(title="Flashcards – Tasks API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -18,6 +29,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(sets_router)
 
 
 def load_exercises() -> list[dict]:
