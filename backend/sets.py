@@ -41,8 +41,10 @@ def _normalize_card(raw: dict) -> dict:
     }
 
 
-def _card_image_url(key: str | None) -> str | None:
-    return f"/api/images/{key}" if key else None
+def _card_image_url(key: str | None, external_url: str | None) -> str | None:
+    if key:
+        return f"/api/images/{key}"
+    return external_url
 
 
 def _card_out(card: CardModel) -> CardOut:
@@ -53,9 +55,22 @@ def _card_out(card: CardModel) -> CardOut:
         back=card.back,
         symbols=card.symbols,
         matching=card.matching,
-        frontImage=_card_image_url(card.front_image_key),
-        backImage=_card_image_url(card.back_image_key),
+        frontImage=_card_image_url(card.front_image_key, card.front_image_url),
+        backImage=_card_image_url(card.back_image_key, card.back_image_url),
     )
+
+
+def _store_image(value: str | None, set_id: int, position: int, side: str) -> tuple[str | None, str | None]:
+    """Returns (object_key, external_url) — embedded image data is decoded
+    and pushed to MinIO (object_key set); anything else that isn't empty
+    (an http URL, a local /public path, ...) is kept as-is (external_url set)
+    so it isn't silently dropped."""
+    decoded = storage.decode_image(value)
+    if decoded:
+        key = storage.object_key(set_id, position, side, decoded.content_type)
+        storage.upload_image(key, decoded)
+        return key, None
+    return None, (value or None)
 
 
 @router.get("/sets", response_model=list[SetSummary])
@@ -116,17 +131,8 @@ async def create_set(
             raise HTTPException(status_code=400, detail=f"Card at index {position} is not an object")
         normalized = _normalize_card(raw)
 
-        front_image_key = None
-        decoded = storage.decode_image(normalized["frontImage"])
-        if decoded:
-            front_image_key = storage.object_key(db_set.id, position, "front", decoded.content_type)
-            storage.upload_image(front_image_key, decoded)
-
-        back_image_key = None
-        decoded = storage.decode_image(normalized["backImage"])
-        if decoded:
-            back_image_key = storage.object_key(db_set.id, position, "back", decoded.content_type)
-            storage.upload_image(back_image_key, decoded)
+        front_image_key, front_image_url = _store_image(normalized["frontImage"], db_set.id, position, "front")
+        back_image_key, back_image_url = _store_image(normalized["backImage"], db_set.id, position, "back")
 
         db.add(
             CardModel(
@@ -138,6 +144,8 @@ async def create_set(
                 matching=normalized["matching"],
                 front_image_key=front_image_key,
                 back_image_key=back_image_key,
+                front_image_url=front_image_url,
+                back_image_url=back_image_url,
             )
         )
 

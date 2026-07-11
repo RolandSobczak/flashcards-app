@@ -40,5 +40,9 @@ class CardModel(Base):
     matching: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     front_image_key: Mapped[str | None] = mapped_column(Text, nullable=True)
     back_image_key: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # External image reference (URL or local /public path) for images that
+    # weren't embedded data and so couldn't be extracted into MinIO.
+    front_image_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    back_image_url: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     set: Mapped["SetModel"] = relationship(back_populates="cards")

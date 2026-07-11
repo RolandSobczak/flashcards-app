@@ -83,6 +83,44 @@
   color: #5a5a80;
 }
 
+.set-card-wrap {
+  position: relative;
+}
+
+.set-card-wrap .set-card {
+  width: 100%;
+}
+
+.set-delete-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #16162a;
+  border: 1px solid #2e2e48;
+  color: #6060a0;
+  font-size: 14px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  opacity: 0;
+  transition: opacity 0.15s, background 0.15s, color 0.15s;
+}
+
+.set-card-wrap:hover .set-delete-btn {
+  opacity: 1;
+}
+
+.set-delete-btn:hover {
+  background: rgba(248, 113, 113, 0.15);
+  border-color: #7f1d1d;
+  color: #f87171;
+}
+
 .menu-divider {
   display: flex;
   align-items: center;
