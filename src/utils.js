@@ -15,6 +15,15 @@ export function useImageUrl(src) {
   return `data:image/png;base64,${src}`
 }
 
+export function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result)
+    reader.onerror = () => reject(reader.error)
+    reader.readAsDataURL(file)
+  })
+}
+
 export function parseMCQ(front) {
   const lines = front.split('\n')
   const optionRe = /^([a-d])\)\s*(.+)$/

@@ -6,6 +6,7 @@ import StatsBar from './components/StatsBar'
 import FlashCard from './components/FlashCard'
 import RoundComplete from './components/RoundComplete'
 import BrowseView from './components/BrowseView'
+import FormatDocsView from './components/FormatDocsView'
 import { shuffle } from './utils'
 import { CHUNK_THRESHOLD } from './constants'
 import { loadSession, saveSession } from './persistence'
@@ -18,7 +19,7 @@ export default function App() {
   const [knownIds, setKnownIds] = useState(() => new Set(persisted?.knownIds ?? []))
   const [queue, setQueue] = useState(persisted?.queue ?? [])
   const [currentIdx, setCurrentIdx] = useState(persisted?.currentIdx ?? 0)
-  const [phase, setPhase] = useState(persisted?.phase ?? 'upload') // upload | chunkSetup | study | roundDone | tasks | browse
+  const [phase, setPhase] = useState(persisted?.phase ?? 'upload') // upload | chunkSetup | study | roundDone | tasks | browse | docs
   const [setName, setSetName] = useState(persisted?.setName ?? '')
   const [browseOrigin, setBrowseOrigin] = useState(persisted?.browseOrigin ?? 'study')
 
@@ -157,6 +158,10 @@ export default function App() {
     setPhase(browseOrigin)
   }
 
+  function handleCardUpdated(updated) {
+    setCards(prev => prev.map(c => (c.id === updated.id ? { ...c, ...updated } : c)))
+  }
+
   function handleLoadNew() {
     setPhase('upload')
     setCards([])
@@ -174,15 +179,15 @@ export default function App() {
   const chunkRemaining = currentChunkIds.length - chunkKnown
   const chunkDone = chunkMode && chunkRemaining === 0
 
-  const studyVisible = phase !== 'upload' && phase !== 'tasks' && phase !== 'chunkSetup' && phase !== 'browse'
-  const hasLoadedSet = phase !== 'upload' && phase !== 'tasks' && cards.length > 0
+  const studyVisible = phase !== 'upload' && phase !== 'tasks' && phase !== 'docs' && phase !== 'chunkSetup' && phase !== 'browse'
+  const hasLoadedSet = phase !== 'upload' && phase !== 'tasks' && phase !== 'docs' && cards.length > 0
 
   return (
     <div className="app">
       <div className="header">
         <div>
           <h1>Fiszki</h1>
-          {phase !== 'upload' && phase !== 'tasks' && setName && (
+          {phase !== 'upload' && phase !== 'tasks' && phase !== 'docs' && setName && (
             <div className="set-name">{setName}</div>
           )}
         </div>
@@ -200,15 +205,19 @@ export default function App() {
       </div>
 
       {phase === 'upload' && (
-        <Menu onData={applyData} onTasks={() => setPhase('tasks')} />
+        <Menu onData={applyData} onTasks={() => setPhase('tasks')} onDocs={() => setPhase('docs')} />
       )}
 
       {phase === 'tasks' && (
         <TasksView onBack={() => setPhase('upload')} />
       )}
 
+      {phase === 'docs' && (
+        <FormatDocsView onBack={() => setPhase('upload')} />
+      )}
+
       {phase === 'browse' && (
-        <BrowseView cards={cards} onBack={closeBrowse} />
+        <BrowseView cards={cards} onBack={closeBrowse} onCardUpdated={handleCardUpdated} />
       )}
 
       {phase === 'chunkSetup' && (
