@@ -157,6 +157,10 @@ export default function App() {
     setPhase(browseOrigin)
   }
 
+  function handleCardUpdated(updated) {
+    setCards(prev => prev.map(c => (c.id === updated.id ? { ...c, ...updated } : c)))
+  }
+
   function handleLoadNew() {
     setPhase('upload')
     setCards([])
@@ -208,7 +212,7 @@ export default function App() {
       )}
 
       {phase === 'browse' && (
-        <BrowseView cards={cards} onBack={closeBrowse} />
+        <BrowseView cards={cards} onBack={closeBrowse} onCardUpdated={handleCardUpdated} />
       )}
 
       {phase === 'chunkSetup' && (

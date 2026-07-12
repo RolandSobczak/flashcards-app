@@ -656,6 +656,72 @@
   font-weight: 500;
 }
 
+.browse-card-edit-btn {
+  align-self: flex-start;
+}
+
+.btn-small {
+  padding: 6px 14px;
+  font-size: 13px;
+}
+
+.edit-field-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6060a0;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.edit-textarea {
+  width: 100%;
+  background: #12121e;
+  border: 1px solid #2e2e48;
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: #e2e2f0;
+  font-size: 14px;
+  line-height: 1.5;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.edit-textarea:focus {
+  outline: none;
+  border-color: #6366f1;
+}
+
+.edit-image-field {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.edit-image-preview {
+  max-height: 120px;
+}
+
+.edit-image-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.edit-image-actions label {
+  cursor: pointer;
+}
+
+.edit-error {
+  font-size: 13px;
+  color: #f87171;
+}
+
+.browse-card-edit-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
 /* ── Chunk stat badge ── */
 .stat.stat-chunk {
   border-color: #2a3a5a;

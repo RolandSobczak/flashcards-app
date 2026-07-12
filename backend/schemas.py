@@ -14,6 +14,15 @@ class CardOut(BaseModel):
     backImage: str | None
 
 
+class CardUpdate(BaseModel):
+    front: str | None = None
+    back: str | None = None
+    symbols: str | None = None
+    matching: dict | None = None
+    frontImage: str | None = None
+    backImage: str | None = None
+
+
 class SetSummary(BaseModel):
     id: int
     slug: str

@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from . import storage
 from .db import get_db
 from .models import CardModel, SetModel
-from .schemas import CardOut, SetDetail, SetSummary
+from .schemas import CardOut, CardUpdate, SetDetail, SetSummary
 
 router = APIRouter(prefix="/api", tags=["sets"])
 
@@ -169,6 +169,42 @@ def delete_set(set_id: int, db: Session = Depends(get_db)):
     db.delete(s)
     db.commit()
     storage.delete_set_images(set_id)
+
+
+def _replace_image(card: CardModel, side: str, value: str | None) -> None:
+    old_key = card.front_image_key if side == "front" else card.back_image_key
+    key, url = _store_image(value, card.set_id, card.position, side)
+    if old_key and old_key != key:
+        storage.delete_object(old_key)
+    if side == "front":
+        card.front_image_key, card.front_image_url = key, url
+    else:
+        card.back_image_key, card.back_image_url = key, url
+
+
+@router.patch("/cards/{card_id}", response_model=CardOut)
+def update_card(card_id: int, payload: CardUpdate, db: Session = Depends(get_db)):
+    card = db.get(CardModel, card_id)
+    if card is None:
+        raise HTTPException(status_code=404, detail="Card not found")
+
+    data = payload.model_dump(exclude_unset=True)
+    if data.get("front") is not None:
+        card.front = data["front"]
+    if data.get("back") is not None:
+        card.back = data["back"]
+    if "symbols" in data:
+        card.symbols = data["symbols"]
+    if "matching" in data:
+        card.matching = data["matching"]
+    if "frontImage" in data:
+        _replace_image(card, "front", data["frontImage"])
+    if "backImage" in data:
+        _replace_image(card, "back", data["backImage"])
+
+    db.commit()
+    db.refresh(card)
+    return _card_out(card)
 
 
 @router.get("/images/{key:path}")

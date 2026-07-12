@@ -26,3 +26,11 @@ export function createSet(file, label, category) {
 export function deleteSet(id) {
   return fetch(`/api/sets/${id}`, { method: 'DELETE' }).then(handle)
 }
+
+export function updateCard(id, payload) {
+  return fetch(`/api/cards/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  }).then(handle)
+}

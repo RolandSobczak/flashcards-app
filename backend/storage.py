@@ -6,6 +6,7 @@ from dataclasses import dataclass
 
 from minio import Minio
 from minio.deleteobjects import DeleteObject
+from minio.error import S3Error
 
 from .config import settings
 
@@ -80,6 +81,13 @@ def upload_image(key: str, image: DecodedImage) -> None:
 def get_object(key: str):
     """Returns a urllib3 response; caller is responsible for closing/releasing it."""
     return _client.get_object(settings.minio_bucket, key)
+
+
+def delete_object(key: str) -> None:
+    try:
+        _client.remove_object(settings.minio_bucket, key)
+    except S3Error:
+        pass
 
 
 def delete_set_images(set_id: int) -> None:
