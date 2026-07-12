@@ -27,6 +27,9 @@ _EXT_BY_CONTENT_TYPE = {
 
 _DATA_URI_RE = re.compile(r"^data:(?P<content_type>[\w.+/-]+);base64,(?P<payload>.+)$", re.DOTALL)
 
+_CONTENT_TYPE_BY_EXT = {ext: content_type for content_type, ext in _EXT_BY_CONTENT_TYPE.items()}
+_CONTENT_TYPE_BY_EXT["jpeg"] = "image/jpeg"
+
 
 def ensure_bucket() -> None:
     if not _client.bucket_exists(settings.minio_bucket):
@@ -66,6 +69,11 @@ def decode_image(value: str | None) -> DecodedImage | None:
 def object_key(set_id: int, card_position: int, side: str, content_type: str) -> str:
     ext = _EXT_BY_CONTENT_TYPE.get(content_type, "bin")
     return f"sets/{set_id}/{card_position}-{side}.{ext}"
+
+
+def content_type_for_filename(name: str) -> str:
+    ext = name.rsplit(".", 1)[-1].lower() if "." in name else ""
+    return _CONTENT_TYPE_BY_EXT.get(ext, "application/octet-stream")
 
 
 def upload_image(key: str, image: DecodedImage) -> None:

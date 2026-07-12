@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { createSet, deleteSet, getSet, listSets } from '../api'
+import { createSet, deleteSet, exportSetUrl, getSet, listSets } from '../api'
 
 function groupByCategory(sets) {
   const groups = new Map()
@@ -46,11 +46,21 @@ export default function Menu({ onData, onTasks }) {
     }
   }
 
+  function handleExport(e, set) {
+    e.stopPropagation()
+    const a = document.createElement('a')
+    a.href = exportSetUrl(set.id)
+    a.download = `${set.slug}.zip`
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+  }
+
   async function uploadFile(file) {
     if (!file || uploading) return
     setUploading(true)
     try {
-      const label = file.name.replace(/\.json$/i, '')
+      const label = file.name.replace(/\.(json|zip)$/i, '')
       const created = await createSet(file, label)
       setSets(prev => [
         { id: created.id, slug: created.slug, label: created.label, category: created.category, cardCount: created.cards.length, createdAt: created.createdAt },
@@ -58,7 +68,7 @@ export default function Menu({ onData, onTasks }) {
       ])
       onData(created.cards, created.label)
     } catch {
-      alert('Nieprawidłowy plik JSON albo błąd zapisu na serwerze.')
+      alert('Nieprawidłowy plik JSON/ZIP albo błąd zapisu na serwerze.')
     } finally {
       setUploading(false)
     }
@@ -94,6 +104,14 @@ export default function Menu({ onData, onTasks }) {
                 <button className="set-card" onClick={() => loadSet(set)}>
                   <span className="set-label">{set.label}</span>
                   <span className="set-count">{set.cardCount} kart</span>
+                </button>
+                <button
+                  className="set-export-btn"
+                  onClick={e => handleExport(e, set)}
+                  title="Eksportuj zestaw (ZIP)"
+                  aria-label="Eksportuj zestaw"
+                >
+                  ⇩
                 </button>
                 <button
                   className="set-delete-btn"
@@ -134,11 +152,11 @@ export default function Menu({ onData, onTasks }) {
         onDrop={e => { e.preventDefault(); setDragOver(false); uploadFile(e.dataTransfer.files[0]) }}
       >
         <div className="upload-icon">📂</div>
-        <p>{uploading ? 'Zapisuję…' : 'Kliknij lub przeciągnij plik JSON'}</p>
+        <p>{uploading ? 'Zapisuję…' : 'Kliknij lub przeciągnij plik JSON albo ZIP'}</p>
         <input
           ref={fileRef}
           type="file"
-          accept=".json"
+          accept=".json,.zip"
           style={{ display: 'none' }}
           disabled={uploading}
           onChange={e => uploadFile(e.target.files[0])}

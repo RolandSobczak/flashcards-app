@@ -91,7 +91,8 @@
   width: 100%;
 }
 
-.set-delete-btn {
+.set-delete-btn,
+.set-export-btn {
   position: absolute;
   top: 8px;
   right: 8px;
@@ -111,7 +112,13 @@
   transition: opacity 0.15s, background 0.15s, color 0.15s;
 }
 
-.set-card-wrap:hover .set-delete-btn {
+.set-export-btn {
+  right: 36px;
+  font-size: 12px;
+}
+
+.set-card-wrap:hover .set-delete-btn,
+.set-card-wrap:hover .set-export-btn {
   opacity: 1;
 }
 
@@ -119,6 +126,12 @@
   background: rgba(248, 113, 113, 0.15);
   border-color: #7f1d1d;
   color: #f87171;
+}
+
+.set-export-btn:hover {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: #4338ca;
+  color: #a5b4fc;
 }
 
 .menu-divider {

@@ -27,6 +27,10 @@ export function deleteSet(id) {
   return fetch(`/api/sets/${id}`, { method: 'DELETE' }).then(handle)
 }
 
+export function exportSetUrl(id) {
+  return `/api/sets/${id}/export`
+}
+
 export function updateCard(id, payload) {
   return fetch(`/api/cards/${id}`, {
     method: 'PATCH',
