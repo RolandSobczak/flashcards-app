@@ -934,6 +934,119 @@
   flex-shrink: 0;
 }
 
+/* ── Format docs view ── */
+.docs-toolbar {
+  display: flex;
+  gap: 10px;
+}
+
+.docs-markdown {
+  max-width: 760px;
+  color: #b0b0d0;
+  font-size: 14.5px;
+  line-height: 1.7;
+}
+
+.docs-markdown h2,
+.docs-markdown h3,
+.docs-markdown h4 {
+  color: #e0e0f4;
+  margin: 28px 0 10px;
+}
+
+.docs-markdown h2:first-child {
+  margin-top: 0;
+}
+
+.docs-markdown h2 {
+  font-size: 19px;
+}
+
+.docs-markdown h3 {
+  font-size: 16px;
+}
+
+.docs-markdown h4 {
+  font-size: 14px;
+}
+
+.docs-markdown p {
+  margin: 10px 0;
+}
+
+.docs-markdown ul {
+  margin: 10px 0;
+  padding-left: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.docs-markdown code {
+  background: #1a1a28;
+  border: 1px solid #2a2a3e;
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 13px;
+  color: #a5b4fc;
+}
+
+.docs-code {
+  background: #12121e;
+  border: 1px solid #2a2a3e;
+  border-radius: 10px;
+  padding: 14px 16px;
+  overflow-x: auto;
+  margin: 10px 0;
+}
+
+.docs-code code {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #c9c9e0;
+  font-size: 13px;
+  white-space: pre;
+}
+
+.docs-markdown blockquote {
+  border-left: 3px solid #6366f1;
+  background: rgba(99, 102, 241, 0.06);
+  padding: 10px 16px;
+  margin: 12px 0;
+  border-radius: 0 8px 8px 0;
+  color: #c0c0dc;
+}
+
+.docs-markdown hr {
+  border: none;
+  border-top: 1px solid #2a2a3e;
+  margin: 24px 0;
+}
+
+.docs-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 13.5px;
+}
+
+.docs-table th,
+.docs-table td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid #2a2a3e;
+  vertical-align: top;
+}
+
+.docs-table th {
+  color: #8080b0;
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
 /* ── Exercise list ── */
 .task-list {
   display: flex;

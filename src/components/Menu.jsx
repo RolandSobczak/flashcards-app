@@ -11,7 +11,7 @@ function groupByCategory(sets) {
   return groups
 }
 
-export default function Menu({ onData, onTasks }) {
+export default function Menu({ onData, onTasks, onDocs }) {
   const [sets, setSets] = useState(null) // null = loading
   const [error, setError] = useState(null)
   const [uploading, setUploading] = useState(false)
@@ -161,6 +161,19 @@ export default function Menu({ onData, onTasks }) {
           disabled={uploading}
           onChange={e => uploadFile(e.target.files[0])}
         />
+      </div>
+
+      <div className="menu-divider">
+        <span>generowanie własnego zestawu</span>
+      </div>
+
+      <div className="menu-section">
+        <div className="menu-sets">
+          <button className="set-card set-card-control" onClick={onDocs}>
+            <span className="set-label">Format zestawu (dla LLM)</span>
+            <span className="set-count">instrukcja + plik do pobrania</span>
+          </button>
+        </div>
       </div>
     </div>
   )
