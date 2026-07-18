@@ -4,7 +4,31 @@ FastAPI service backing the flashcards app: the existing Boolean-algebra
 tasks API, plus persistent storage for flashcard sets (PostgreSQL for
 metadata/cards, MinIO for embedded images).
 
-## Local setup
+## Full stack in Docker (local "prod")
+
+To run everything — Postgres, MinIO, the backend, and the built frontend —
+with a single command, from the repo root:
+
+```bash
+docker compose --profile full up -d --build
+# or: npm run docker:up
+```
+
+This builds and starts all four services (migrations run automatically on
+backend startup) and serves the app at **http://localhost:8080** (nginx,
+serving the production frontend build and reverse-proxying `/api/*` to the
+backend container). The backend is also reachable directly at
+http://localhost:8000, MinIO's console at http://localhost:9001.
+
+Rebuild after changing backend or frontend code with the same command
+(`--build` recreates any image whose context changed). Tear everything down
+with `docker compose --profile full down` (add `-v` to also wipe the
+Postgres/MinIO volumes). `backend`/`frontend` sit behind the `full` profile
+specifically so a plain `docker compose up -d` (used below for local dev)
+still only starts Postgres + MinIO. Don't run both modes at once — they'd
+fight over ports 8000/5432/9000.
+
+## Local dev setup
 
 1. Start Postgres + MinIO (from the repo root):
 
@@ -52,8 +76,8 @@ metadata/cards, MinIO for embedded images).
   `frontImage`/`image`, `backImage`, `symbols`, `matching`), `label`, optional
   `category`. Any embedded base64 image data is decoded and stored as an
   object in MinIO; the card keeps a reference instead of the raw bytes.
-  External image URLs/paths are left unstored (not embedded data, so there's
-  nothing to extract).
+  External image URLs/paths (not embedded data, so nothing to extract) are
+  kept as-is and returned verbatim instead.
 - `DELETE /api/sets/{id}` — removes the set (cards cascade) and its images.
 - `GET /api/images/{key}` — streams an image object out of MinIO.
 

@@ -1,3 +1,5 @@
+import { authFetch } from './auth'
+
 async function handle(res) {
   if (!res.ok) {
     let detail
@@ -8,11 +10,11 @@ async function handle(res) {
 }
 
 export function listSets() {
-  return fetch('/api/sets').then(handle)
+  return authFetch('/api/sets').then(handle)
 }
 
 export function getSet(id) {
-  return fetch(`/api/sets/${id}`).then(handle)
+  return authFetch(`/api/sets/${id}`).then(handle)
 }
 
 export function createSet(file, label, category) {
@@ -20,19 +22,29 @@ export function createSet(file, label, category) {
   form.append('file', file)
   form.append('label', label)
   if (category) form.append('category', category)
-  return fetch('/api/sets', { method: 'POST', body: form }).then(handle)
+  return authFetch('/api/sets', { method: 'POST', body: form }).then(handle)
 }
 
 export function deleteSet(id) {
-  return fetch(`/api/sets/${id}`, { method: 'DELETE' }).then(handle)
+  return authFetch(`/api/sets/${id}`, { method: 'DELETE' }).then(handle)
 }
 
-export function exportSetUrl(id) {
-  return `/api/sets/${id}/export`
+// The export endpoint is bearer-protected, so it can't be reached with a
+// plain <a href> download (a browser navigation won't send the token). Pull
+// it as an authenticated blob instead and hand back an object URL the caller
+// can trigger a download from.
+export async function exportSet(id) {
+  const res = await authFetch(`/api/sets/${id}/export`)
+  if (!res.ok) {
+    let detail
+    try { detail = (await res.json()).detail } catch { /* not json */ }
+    throw new Error(detail || `HTTP ${res.status}`)
+  }
+  return res.blob()
 }
 
 export function updateCard(id, payload) {
-  return fetch(`/api/cards/${id}`, {
+  return authFetch(`/api/cards/${id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),

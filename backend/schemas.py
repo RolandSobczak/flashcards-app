@@ -23,6 +23,25 @@ class CardUpdate(BaseModel):
     backImage: str | None = None
 
 
+class RequestCodeIn(BaseModel):
+    email: str
+
+
+class VerifyCodeIn(BaseModel):
+    email: str
+    code: str
+
+
+class UserOut(BaseModel):
+    id: int
+    email: str
+
+
+class AuthOut(BaseModel):
+    token: str
+    user: UserOut
+
+
 class SetSummary(BaseModel):
     id: int
     slug: str

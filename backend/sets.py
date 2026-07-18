@@ -10,8 +10,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from . import storage
+from .auth import get_current_user
 from .db import get_db
-from .models import CardModel, SetModel
+from .models import CardModel, SetModel, UserModel
 from .schemas import CardOut, CardUpdate, SetDetail, SetSummary
 
 router = APIRouter(prefix="/api", tags=["sets"])
@@ -110,8 +111,10 @@ def _load_zip_payload(raw: bytes) -> tuple[zipfile.ZipFile, list | dict]:
 
 
 @router.get("/sets", response_model=list[SetSummary])
-def list_sets(db: Session = Depends(get_db)):
-    sets = db.scalars(select(SetModel).order_by(SetModel.created_at.desc())).all()
+def list_sets(db: Session = Depends(get_db), user: UserModel = Depends(get_current_user)):
+    sets = db.scalars(
+        select(SetModel).where(SetModel.owner_id == user.id).order_by(SetModel.created_at.desc())
+    ).all()
     return [
         SetSummary(
             id=s.id,
@@ -126,7 +129,11 @@ def list_sets(db: Session = Depends(get_db)):
 
 
 @router.get("/sets/{set_id}", response_model=SetDetail)
-def get_set(set_id: int, db: Session = Depends(get_db)):
+def get_set(set_id: int, db: Session = Depends(get_db), user: UserModel = Depends(get_current_user)):
+    # Any logged-in user can open a set by id (not just its owner) — that's
+    # what makes "share this set by sending a link" possible once the app
+    # grows real deep-linking; for now it's reachable by anyone who knows
+    # the id and has an account.
     s = db.get(SetModel, set_id)
     if s is None:
         raise HTTPException(status_code=404, detail="Set not found")
@@ -162,10 +169,12 @@ def _export_image_ref(
 
 
 @router.get("/sets/{set_id}/export")
-def export_set(set_id: int, db: Session = Depends(get_db)):
+def export_set(set_id: int, db: Session = Depends(get_db), user: UserModel = Depends(get_current_user)):
     s = db.get(SetModel, set_id)
     if s is None:
         raise HTTPException(status_code=404, detail="Set not found")
+    if s.owner_id != user.id:
+        raise HTTPException(status_code=403, detail="Nie jesteś właścicielem tego zestawu")
 
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
@@ -197,6 +206,7 @@ async def create_set(
     label: str = Form(...),
     category: str | None = Form(None),
     db: Session = Depends(get_db),
+    user: UserModel = Depends(get_current_user),
 ):
     raw_bytes = await file.read()
     label = label.strip()
@@ -223,7 +233,7 @@ async def create_set(
 
     slug = _unique_slug(db, label)
 
-    db_set = SetModel(slug=slug, label=label, category=category)
+    db_set = SetModel(slug=slug, label=label, category=category, owner_id=user.id)
     db.add(db_set)
     db.flush()  # assign db_set.id for building image object keys
 
@@ -263,10 +273,12 @@ async def create_set(
 
 
 @router.delete("/sets/{set_id}", status_code=204)
-def delete_set(set_id: int, db: Session = Depends(get_db)):
+def delete_set(set_id: int, db: Session = Depends(get_db), user: UserModel = Depends(get_current_user)):
     s = db.get(SetModel, set_id)
     if s is None:
         raise HTTPException(status_code=404, detail="Set not found")
+    if s.owner_id != user.id:
+        raise HTTPException(status_code=403, detail="Nie jesteś właścicielem tego zestawu")
     db.delete(s)
     db.commit()
     storage.delete_set_images(set_id)
@@ -284,10 +296,14 @@ def _replace_image(card: CardModel, side: str, value: str | None) -> None:
 
 
 @router.patch("/cards/{card_id}", response_model=CardOut)
-def update_card(card_id: int, payload: CardUpdate, db: Session = Depends(get_db)):
+def update_card(
+    card_id: int, payload: CardUpdate, db: Session = Depends(get_db), user: UserModel = Depends(get_current_user)
+):
     card = db.get(CardModel, card_id)
     if card is None:
         raise HTTPException(status_code=404, detail="Card not found")
+    if card.set.owner_id != user.id:
+        raise HTTPException(status_code=403, detail="Nie jesteś właścicielem tego zestawu")
 
     data = payload.model_dump(exclude_unset=True)
     if data.get("front") is not None:
