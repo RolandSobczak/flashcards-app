@@ -3,13 +3,15 @@ import re
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sympy import symbols, Not
 from sympy.logic.boolalg import Xor, Equivalent, simplify_logic
 
 from . import storage
+from .auth import get_current_user, router as auth_router
+from .models import UserModel
 from .sets import router as sets_router
 
 EXERCISES_FILE = Path(__file__).parent / "exercises.json"
@@ -31,6 +33,12 @@ app.add_middleware(
 )
 
 app.include_router(sets_router)
+app.include_router(auth_router)
+
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
 
 
 def load_exercises() -> list[dict]:
@@ -93,7 +101,7 @@ def answers_equivalent(user: str, expected: str, variable_names: list[str]) -> b
 # ── Routes ─────────────────────────────────────────────────────────────────────
 
 @app.get("/api/exercises")
-def get_exercises():
+def get_exercises(user: UserModel = Depends(get_current_user)):
     exercises = load_exercises()
     return [
         {"id": e["id"], "title": e["title"], "question": e["question"]}
@@ -102,7 +110,7 @@ def get_exercises():
 
 
 @app.get("/api/exercises/{ex_id}/solution")
-def get_solution(ex_id: int):
+def get_solution(ex_id: int, user: UserModel = Depends(get_current_user)):
     exercises = load_exercises()
     ex = next((e for e in exercises if e["id"] == ex_id), None)
     if ex is None:
@@ -115,7 +123,7 @@ class AnswerPayload(BaseModel):
 
 
 @app.post("/api/exercises/{ex_id}/check")
-def check_answer(ex_id: int, payload: AnswerPayload):
+def check_answer(ex_id: int, payload: AnswerPayload, user: UserModel = Depends(get_current_user)):
     exercises = load_exercises()
     ex = next((e for e in exercises if e["id"] == ex_id), None)
     if ex is None:

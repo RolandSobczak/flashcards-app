@@ -32,6 +32,75 @@
   align-items: center;
 }
 
+.user-badge {
+  font-size: 13px;
+  color: #7a7aa0;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Login ── */
+.login {
+  display: flex;
+  justify-content: center;
+  padding: 48px 16px;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 380px;
+  background: #14141f;
+  border: 1px solid #23233a;
+  border-radius: 16px;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.login-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #f0f0ff;
+}
+
+.login-desc {
+  font-size: 14px;
+  color: #8080a0;
+  line-height: 1.5;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.login-submit {
+  margin-top: 6px;
+  width: 100%;
+}
+
+.login-back {
+  width: 100%;
+}
+
+.login-info {
+  font-size: 13px;
+  color: #7a9a7a;
+  background: #14201a;
+  border: 1px solid #244024;
+  border-radius: 8px;
+  padding: 10px 14px;
+  line-height: 1.5;
+}
+
+.login-error {
+  margin: 0;
+}
+
 /* ── Menu ── */
 .menu {
   display: flex;
@@ -63,6 +132,7 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+  width: 100%;
   transition: border-color 0.15s, background 0.15s;
 }
 
@@ -81,57 +151,6 @@
 .set-count {
   font-size: 12px;
   color: #5a5a80;
-}
-
-.set-card-wrap {
-  position: relative;
-}
-
-.set-card-wrap .set-card {
-  width: 100%;
-}
-
-.set-delete-btn,
-.set-export-btn {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: #16162a;
-  border: 1px solid #2e2e48;
-  color: #6060a0;
-  font-size: 14px;
-  line-height: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  opacity: 0;
-  transition: opacity 0.15s, background 0.15s, color 0.15s;
-}
-
-.set-export-btn {
-  right: 36px;
-  font-size: 12px;
-}
-
-.set-card-wrap:hover .set-delete-btn,
-.set-card-wrap:hover .set-export-btn {
-  opacity: 1;
-}
-
-.set-delete-btn:hover {
-  background: rgba(248, 113, 113, 0.15);
-  border-color: #7f1d1d;
-  color: #f87171;
-}
-
-.set-export-btn:hover {
-  background: rgba(99, 102, 241, 0.15);
-  border-color: #4338ca;
-  color: #a5b4fc;
 }
 
 .menu-divider {
@@ -786,6 +805,11 @@
   gap: 14px;
 }
 
+.chunk-option-resume {
+  border-color: #1a3a2a;
+  background: #0f1e18;
+}
+
 .chunk-option-title {
   font-size: 16px;
   font-weight: 600;
@@ -856,6 +880,14 @@
   justify-content: center;
   border-radius: 12px;
   padding: 14px 20px;
+}
+
+.chunk-setup-manage {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  padding-top: 8px;
+  border-top: 1px solid #22223a;
 }
 
 /* ══════════════════════════════════════════════════════

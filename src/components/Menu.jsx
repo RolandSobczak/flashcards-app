@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { createSet, deleteSet, exportSetUrl, getSet, listSets } from '../api'
+import { createSet, getSet, listSets } from '../api'
 
 function groupByCategory(sets) {
   const groups = new Map()
@@ -22,38 +22,17 @@ export default function Menu({ onData, onTasks, onDocs }) {
     let cancelled = false
     listSets()
       .then(data => { if (!cancelled) setSets(data) })
-      .catch(() => { if (!cancelled) setError('Nie można połączyć się z backendem. Uruchom: uvicorn backend.main:app --reload') })
+      .catch(() => { if (!cancelled) setError('Nie udało się wczytać zestawów. Sprawdź, czy backend działa (jeśli sesja wygasła, zaloguj się ponownie).') })
     return () => { cancelled = true }
   }, [])
 
   async function loadSet(set) {
     try {
       const detail = await getSet(set.id)
-      onData(detail.cards, detail.label)
+      onData(detail.cards, detail.label, set.id)
     } catch {
       alert('Nie udało się wczytać zestawu.')
     }
-  }
-
-  async function handleDelete(e, set) {
-    e.stopPropagation()
-    if (!window.confirm(`Usunąć zestaw „${set.label}”?`)) return
-    try {
-      await deleteSet(set.id)
-      setSets(prev => prev.filter(s => s.id !== set.id))
-    } catch {
-      alert('Nie udało się usunąć zestawu.')
-    }
-  }
-
-  function handleExport(e, set) {
-    e.stopPropagation()
-    const a = document.createElement('a')
-    a.href = exportSetUrl(set.id)
-    a.download = `${set.slug}.zip`
-    document.body.appendChild(a)
-    a.click()
-    a.remove()
   }
 
   async function uploadFile(file) {
@@ -66,7 +45,7 @@ export default function Menu({ onData, onTasks, onDocs }) {
         { id: created.id, slug: created.slug, label: created.label, category: created.category, cardCount: created.cards.length, createdAt: created.createdAt },
         ...(prev ?? []),
       ])
-      onData(created.cards, created.label)
+      onData(created.cards, created.label, created.id)
     } catch {
       alert('Nieprawidłowy plik JSON/ZIP albo błąd zapisu na serwerze.')
     } finally {
@@ -100,28 +79,10 @@ export default function Menu({ onData, onTasks, onDocs }) {
           )}
           <div className="menu-sets">
             {group.map(set => (
-              <div key={set.id} className="set-card-wrap">
-                <button className="set-card" onClick={() => loadSet(set)}>
-                  <span className="set-label">{set.label}</span>
-                  <span className="set-count">{set.cardCount} kart</span>
-                </button>
-                <button
-                  className="set-export-btn"
-                  onClick={e => handleExport(e, set)}
-                  title="Eksportuj zestaw (ZIP)"
-                  aria-label="Eksportuj zestaw"
-                >
-                  ⇩
-                </button>
-                <button
-                  className="set-delete-btn"
-                  onClick={e => handleDelete(e, set)}
-                  title="Usuń zestaw"
-                  aria-label="Usuń zestaw"
-                >
-                  ×
-                </button>
-              </div>
+              <button key={set.id} className="set-card" onClick={() => loadSet(set)}>
+                <span className="set-label">{set.label}</span>
+                <span className="set-count">{set.cardCount} kart</span>
+              </button>
             ))}
           </div>
         </div>

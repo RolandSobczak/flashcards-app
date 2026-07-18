@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import LatexContent from './LatexContent'
+import { authFetch } from './auth'
 
 // ── Exercise list ──────────────────────────────────────────────────────────────
 
@@ -82,7 +83,7 @@ function ExerciseDetail({ exercise, onBack }) {
     setChecking(true)
     setResult(null)
     try {
-      const res = await fetch(`/api/exercises/${exercise.id}/check`, {
+      const res = await authFetch(`/api/exercises/${exercise.id}/check`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ answer: answer.trim() }),
@@ -100,7 +101,7 @@ function ExerciseDetail({ exercise, onBack }) {
     if (solution) return
     setLoadingSolution(true)
     try {
-      const res = await fetch(`/api/exercises/${exercise.id}/solution`)
+      const res = await authFetch(`/api/exercises/${exercise.id}/solution`)
       setSolution(await res.json())
     } catch {
       setSolution({ error: true })
@@ -166,14 +167,14 @@ export default function TasksView({ onBack }) {
   const [selected, setSelected] = useState(null)
 
   useEffect(() => {
-    fetch('/api/exercises')
+    authFetch('/api/exercises')
       .then(r => {
         if (!r.ok) throw new Error('HTTP ' + r.status)
         return r.json()
       })
       .then(data => { setExercises(data); setLoading(false) })
       .catch(() => {
-        setError('Nie można połączyć się z backendem. Uruchom: uvicorn backend.main:app --reload')
+        setError('Nie udało się wczytać zadań. Sprawdź, czy backend działa (jeśli sesja wygasła, zaloguj się ponownie).')
         setLoading(false)
       })
   }, [])
