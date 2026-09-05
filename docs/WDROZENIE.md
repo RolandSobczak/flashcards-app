@@ -82,7 +82,38 @@ curl -k -u 'r164:HASLO_PANELU' https://outsider.mikr.us:2222/CMD_API_POP \
 
 **Dostarczalność.** Domena `r164.mikr.dev` ma SPF obejmujący Outsidera (`v=spf1 a mx ...`, a rekord `a` wskazuje na `95.217.59.141`, czyli hosta wysyłającego), więc SPF przechodzi. DKIM-a ani DMARC-a **nie ma** — pod `*.mikr.dev` stoi wildcardowy TXT, który zwraca ten sam wpis SPF również pod `_dmarc` i `_domainkey`. Poczta bez DKIM-a bywa u dużych dostawców traktowana podejrzliwie, więc pierwszą wiadomość warto poszukać w spamie i oznaczyć „to nie spam".
 
-Gdyby Gmail zaczął odrzucać: alternatywą jest własna domena z własnym SPF i DKIM (dodana w panelu Outsidera) albo zewnętrzny SMTP, np. konto Google z hasłem aplikacji — wtedy zmieniają się tylko zmienne `SMTP_*` w `.env` i `up -d`.
+### Limity Outsidera
+
+Pakiet `piko`, odczytany z konta poleceniem `CMD_API_SHOW_USER_CONFIG`:
+
+| Limit | Wartość |
+|---|---|
+| Wysłane maile z całego konta | 1000 na dobę |
+| Wysłane ze skrzynki `fiszki` | 200 na dobę (ustawione przy zakładaniu) |
+| Skrzynki pocztowe | 25 |
+| Przekierowania, autorespondery, listy | bez limitu |
+| Dysk | 100 MB |
+| Transfer | 10 GB miesięcznie |
+| Bazy MySQL / konta FTP / subdomeny | 10 / 10 / bez limitu |
+
+Bieżące zużycie: `CMD_API_SHOW_USER_USAGE`.
+
+Przy logowaniu kodem raz na 30 dni (`session_ttl_days`) i minutowym cooldownie na ponowną wysyłkę (`login_code_resend_cooldown_seconds`) te limity są nieosiągalne nawet dla kilkudziesięciu użytkowników. Podniesienie limitu skrzynki:
+
+```bash
+curl -k -u 'r164:HASLO_PANELU' https://outsider.mikr.us:2222/CMD_API_POP \
+  -d action=modify -d domain=r164.mikr.dev -d user=fiszki -d limit=1000
+```
+
+### Zanim wpuścisz kogoś z zewnątrz
+
+Wąskim gardłem nie są limity, tylko brak DKIM-a. Właściciel serwera dostaje kody bez problemu, bo Gmail zna go jako nadawcę. Ktoś obcy — zwłaszcza na Outlooku, Onecie czy WP — dostaje wiadomość bez DKIM-a i bez DMARC-a, z współdzielonej domeny `mikr.dev`, na której siedzą setki innych serwerów Mikrusa. Pierwszy kod logowania może nie dojść do Odebranych, a użytkownik nie będzie wiedział, że ma go szukać w spamie.
+
+Dwa wyjścia, oba darmowe:
+
+1. **Własna domena w panelu Outsidera** — po dodaniu domeny DirectAdmin generuje dla niej klucz DKIM; u rejestratora ustawiasz MX na `outsider.mikr.us`, TXT ze SPF i DKIM oraz `_dmarc`. Wysyłka idzie wtedy z pełnym uwierzytelnieniem. Wymaga posiadania domeny — darmowa `*.mikr.dev` nie zadziała, bo DNS-em zarządza Mikrus.
+2. **Zewnętrzny SMTP z gotową reputacją** — konto Google z hasłem aplikacji (500 na dobę) albo darmowy próg Brevo (300 na dobę). Zmieniają się wyłącznie zmienne `SMTP_*` w `.env`, potem `up -d`.
+
 
 Mailpit został w stacku jako usługa lokalna, ale nie łapie już poczty aplikacji — backend gada bezpośrednio z Outsiderem. Jego konsola nie jest wystawiona publicznie i nie powinna być.
 
