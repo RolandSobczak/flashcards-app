@@ -13,7 +13,7 @@ from . import storage
 from .auth import get_current_user
 from .db import get_db
 from .models import CardModel, SetModel, UserModel
-from .schemas import CardOut, CardUpdate, SetDetail, SetSummary
+from .schemas import CardOut, CardsIn, CardUpdate, SetDetail, SetSummary
 
 router = APIRouter(prefix="/api", tags=["sets"])
 
@@ -269,6 +269,65 @@ async def create_set(
         category=db_set.category,
         createdAt=db_set.created_at,
         cards=[_card_out(c) for c in db_set.cards],
+    )
+
+
+@router.post("/sets/{set_id}/cards", response_model=SetDetail, status_code=201)
+def add_cards(
+    set_id: int, payload: CardsIn, db: Session = Depends(get_db), user: UserModel = Depends(get_current_user)
+):
+    """Dokłada karty na koniec istniejącego zestawu.
+
+    Zestaw zachowuje id i slug, więc odnośniki i zapisany postęp rundy nie
+    tracą ważności — inaczej niż przy skasowaniu i założeniu go od nowa.
+    """
+    s = db.get(SetModel, set_id)
+    if s is None:
+        raise HTTPException(status_code=404, detail="Set not found")
+    if s.owner_id != user.id:
+        raise HTTPException(status_code=403, detail="Nie jesteś właścicielem tego zestawu")
+    if not payload.cards:
+        raise HTTPException(status_code=400, detail="Expected a non-empty list of cards")
+
+    # Pozycje liczymy od najwyższej istniejącej, a nie od liczby kart: gdyby
+    # kiedyś doszło kasowanie pojedynczych kart, licznik zrobiłby duplikat.
+    next_position = max((c.position for c in s.cards), default=-1) + 1
+
+    for offset, raw in enumerate(payload.cards):
+        if not isinstance(raw, dict):
+            raise HTTPException(status_code=400, detail=f"Card at index {offset} is not an object")
+        normalized = _normalize_card(raw)
+        if not normalized["front"]:
+            raise HTTPException(status_code=400, detail=f"Card at index {offset} has no front")
+
+        position = next_position + offset
+        front_image_key, front_image_url = _store_image(normalized["frontImage"], s.id, position, "front")
+        back_image_key, back_image_url = _store_image(normalized["backImage"], s.id, position, "back")
+
+        db.add(
+            CardModel(
+                set_id=s.id,
+                position=position,
+                front=normalized["front"],
+                back=normalized["back"],
+                symbols=normalized["symbols"],
+                matching=normalized["matching"],
+                front_image_key=front_image_key,
+                back_image_key=back_image_key,
+                front_image_url=front_image_url,
+                back_image_url=back_image_url,
+            )
+        )
+
+    db.commit()
+    db.refresh(s)
+    return SetDetail(
+        id=s.id,
+        slug=s.slug,
+        label=s.label,
+        category=s.category,
+        createdAt=s.created_at,
+        cards=[_card_out(c) for c in s.cards],
     )
 
 

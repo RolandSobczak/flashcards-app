@@ -123,7 +123,7 @@ def _api_get_set(set_id):
     return _request("GET", f"/api/sets/{int(set_id)}")
 
 
-def _api_create_set(label, cards, category=None):
+def _validate_cards(cards):
     if not isinstance(cards, list) or not cards:
         raise ApiError("cards musi być niepustą listą obiektów kart")
     for i, card in enumerate(cards):
@@ -131,6 +131,10 @@ def _api_create_set(label, cards, category=None):
             raise ApiError(f"karta {i} nie jest obiektem")
         if not card.get("front") and not card.get("question"):
             raise ApiError(f"karta {i} nie ma pola front")
+
+
+def _api_create_set(label, cards, category=None):
+    _validate_cards(cards)
     payload = json.dumps(cards, ensure_ascii=False).encode("utf-8")
     content_type, body = build_multipart({"label": label, "category": category}, "set.json", payload)
     return _request("POST", "/api/sets", data=body, headers={"Content-Type": content_type})
@@ -166,6 +170,13 @@ def _api_update_card(card_id, fields):
         raise ApiError("Nie podano żadnego pola do zmiany.")
     body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
     return _request("PATCH", f"/api/cards/{int(card_id)}", data=body,
+                    headers={"Content-Type": "application/json"})
+
+
+def _api_add_cards(set_id, cards):
+    _validate_cards(cards)
+    body = json.dumps({"cards": cards}, ensure_ascii=False).encode("utf-8")
+    return _request("POST", f"/api/sets/{int(set_id)}/cards", data=body,
                     headers={"Content-Type": "application/json"})
 
 
@@ -206,11 +217,12 @@ def self_check():
 
     for bad in ([], "nie lista", [{"back": "brak frontu"}]):
         try:
-            _api_create_set("x", bad)
+            _validate_cards(bad)
         except ApiError:
             pass
         else:  # pragma: no cover
             raise AssertionError(f"walidacja przepuściła {bad!r}")
+    _validate_cards([{"question": "alias frontu też jest w porządku"}])
 
     assert FORMAT_DOC.exists(), f"brak specyfikacji formatu: {FORMAT_DOC}"
 
@@ -280,11 +292,20 @@ def main():
         because besides plain front/back cards there are multiple-choice and
         matching cards. The minimal card is {"front": "...", "back": "..."}.
 
-        A set cannot be extended later: the API has no append-card endpoint,
-        so pass the complete list in one call. Individual cards can still be
-        edited afterwards with update_card.
+        Use add_cards to append to an existing set and update_card to edit a
+        single card; this tool always creates a new set.
         """
         return _guard(lambda: _api_create_set(label, cards, category))
+
+    @mcp.tool()
+    def add_cards(set_id: int, cards: list[dict]) -> str:
+        """Append cards to the end of an existing set and return the whole set.
+
+        The set keeps its id and slug, so links and saved round progress stay
+        valid — unlike deleting and recreating it. Cards use the same format as
+        create_set; call set_format if you have not read it yet.
+        """
+        return _guard(lambda: _api_add_cards(set_id, cards))
 
     @mcp.tool()
     def update_card(

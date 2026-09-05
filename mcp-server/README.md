@@ -12,14 +12,15 @@ MinIO bezpośrednio, więc obowiązują te same reguły własności i autoryzacj
 | `list_sets` | lista zestawów zalogowanego użytkownika: id, slug, etykieta, kategoria, liczba kart |
 | `get_set(set_id)` | jeden zestaw wraz ze wszystkimi kartami |
 | `create_set(label, cards, category)` | zakłada zestaw z listy kart |
+| `add_cards(set_id, cards)` | dopisuje karty na koniec istniejącego zestawu |
 | `update_card(card_id, ...)` | edytuje pojedynczą kartę: treść, legendę, obrazki |
 | `delete_set(set_id)` | kasuje zestaw wraz z kartami i obrazkami |
 | `set_format()` | pełna specyfikacja formatu karty (`src/docs/set-format.md`) |
 
-Dopisywania kart do istniejącego zestawu **nie ma**, bo API nie ma takiego
-endpointu — `create_set` dostaje komplet kart w jednym wywołaniu. Pojedynczą
-kartę można za to zmienić w miejscu przez `update_card`, bez ruszania reszty
-zestawu i bez utraty jego id.
+`create_set` zakłada nowy zestaw, `add_cards` dokłada karty na koniec
+istniejącego, a `update_card` zmienia pojedynczą kartę w miejscu. Dwa ostatnie
+zachowują id i slug zestawu, więc odnośniki i zapisany postęp rundy nie tracą
+ważności — inaczej niż przy skasowaniu i założeniu go od nowa.
 
 ### Podmiana obrazka
 
