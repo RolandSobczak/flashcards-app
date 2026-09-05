@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Check, RotateCcw } from 'lucide-react'
 import LatexContent from '../LatexContent'
 import { useImageUrl, parseMCQ, getCorrectLetter } from '../utils'
 import MCQCard from './MCQCard'
@@ -77,10 +78,12 @@ export default function FlashCard({ card, onKnow, onSkip }) {
 
       <div className="card-actions">
         <button className="btn-skip" onClick={handleSkip}>
+          <RotateCcw size={17} aria-hidden="true" />
           Jeszcze nie umiem
         </button>
         <button className="btn-know" onClick={handleKnow} disabled={!flipped}>
-          Umiem ✓
+          <Check size={17} aria-hidden="true" />
+          Umiem
         </button>
       </div>
     </div>

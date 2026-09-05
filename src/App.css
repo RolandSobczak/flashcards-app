@@ -9,8 +9,14 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
+  gap: 12px 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #22222f;
+}
+
+.header-brand {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .header h1 {
@@ -24,21 +30,42 @@
   font-size: 13px;
   color: #5a5a80;
   margin-top: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .header-actions {
   display: flex;
   gap: 8px;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .user-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   font-size: 13px;
   color: #7a7aa0;
-  max-width: 200px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  min-width: 0;
+}
+
+.user-avatar {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #26263e;
+  color: #b4b4d4;
+  font-size: 13px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.user-email {
+  display: none;
 }
 
 /* ── Login ── */
@@ -192,23 +219,34 @@
 }
 
 .upload-icon {
-  font-size: 28px;
-  margin-bottom: 4px;
+  display: flex;
+  justify-content: center;
+  color: #6366f1;
+  margin-bottom: 6px;
 }
 
 /* ── Stats bar ── */
 .stats-bar {
   display: flex;
-  gap: 12px;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.stats-chips {
+  display: flex;
+  gap: 8px;
   flex-wrap: wrap;
   align-items: center;
 }
 
 .stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   background: #1a1a28;
   border: 1px solid #2a2a3e;
   border-radius: 10px;
-  padding: 8px 16px;
+  padding: 8px 14px;
   font-size: 14px;
   color: #9090b0;
   white-space: nowrap;
@@ -277,9 +315,7 @@
 }
 
 .card-label {
-  position: absolute;
-  top: 14px;
-  left: 18px;
+  align-self: flex-start;
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 1px;
@@ -962,7 +998,8 @@
 }
 
 .tasks-error-icon {
-  font-size: 18px;
+  display: flex;
+  align-items: center;
   flex-shrink: 0;
 }
 
@@ -1331,4 +1368,106 @@
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+/* ── Przyciski z ikoną ── */
+/* Ikony lucide są SVG dziedziczącym currentColor, więc wystarczy je wyrównać
+   do tekstu; kolor bierze się z reguły przycisku. */
+.btn-icon,
+.btn-know,
+.btn-skip,
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-icon svg,
+.btn-know svg,
+.btn-skip svg,
+.stat svg {
+  flex-shrink: 0;
+}
+
+/* ── Mobile ── */
+/* Poniżej 640 px nagłówek gubi etykiety przycisków i pełny adres e-mail:
+   przy czterech akcjach obok siebie pasek zawijał się na trzy rzędy, a adres
+   i tak był ucinany w połowie. Zostają ikony z aria-label i inicjał w kółku. */
+@media (max-width: 640px) {
+  body {
+    padding: 16px 12px 28px;
+  }
+
+  .app {
+    gap: 18px;
+  }
+
+  .header {
+    gap: 10px;
+    padding-bottom: 12px;
+  }
+
+  .header h1 {
+    font-size: 19px;
+  }
+
+  .set-name {
+    font-size: 12px;
+    max-width: 42vw;
+  }
+
+  .header-actions {
+    gap: 6px;
+  }
+
+  .btn-label {
+    display: none;
+  }
+
+  .btn-icon {
+    padding: 0;
+    width: 40px;
+    height: 40px;
+  }
+
+  .stat {
+    padding: 7px 12px;
+    font-size: 13px;
+  }
+
+  .card-face {
+    padding: 20px 16px;
+    border-radius: 14px;
+  }
+
+  .card-content {
+    font-size: 16px;
+  }
+
+  /* Dwa przyciski oceny w równym podziale, wysokość pod kciuk. */
+  .card-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .card-actions button {
+    min-height: 48px;
+    padding: 12px 10px;
+    font-size: 14px;
+  }
+
+  .mcq-btn {
+    padding: 12px 14px;
+  }
+
+  .round-complete .actions {
+    flex-direction: column;
+  }
+
+  .round-complete .actions button {
+    width: 100%;
+    min-height: 46px;
+  }
 }

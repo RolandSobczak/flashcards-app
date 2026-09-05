@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { RotateCcw, ArrowRight, ListChecks } from 'lucide-react'
 import LatexContent from '../LatexContent'
 import { useImageUrl, shuffle } from '../utils'
 
@@ -90,12 +91,19 @@ export default function MatchingCard({ card, matching, onKnow, onSkip }) {
             className={isAllCorrect ? 'btn-know' : 'btn-skip'}
             onClick={isAllCorrect ? onKnow : onSkip}
           >
-            Następne pytanie →
+            Następne pytanie
+            <ArrowRight size={17} aria-hidden="true" />
           </button>
         ) : (
           <>
-            <button className="btn-skip" onClick={handleSkipReveal}>Jeszcze nie umiem</button>
-            <button className="btn-primary" onClick={() => setChecked(true)}>Sprawdź</button>
+            <button className="btn-skip" onClick={handleSkipReveal}>
+              <RotateCcw size={17} aria-hidden="true" />
+              Jeszcze nie umiem
+            </button>
+            <button className="btn-primary" onClick={() => setChecked(true)}>
+              <ListChecks size={17} aria-hidden="true" />
+              Sprawdź
+            </button>
           </>
         )}
       </div>

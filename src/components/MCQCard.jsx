@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Check, RotateCcw, ArrowRight } from 'lucide-react'
 import LatexContent from '../LatexContent'
 import { useImageUrl } from '../utils'
 
@@ -78,15 +79,18 @@ export default function MCQCard({ card, mcq, correctLetter, onKnow, onSkip }) {
             className={isCorrect ? 'btn-know' : 'btn-skip'}
             onClick={isCorrect ? handleKnow : handleNext}
           >
-            Następne pytanie →
+            Następne pytanie
+            <ArrowRight size={17} aria-hidden="true" />
           </button>
         ) : (
           <>
             <button className="btn-skip" onClick={() => setSkipped(true)}>
+              <RotateCcw size={17} aria-hidden="true" />
               Jeszcze nie umiem
             </button>
             <button className="btn-know" disabled>
-              Umiem ✓
+              <Check size={17} aria-hidden="true" />
+              Umiem
             </button>
           </>
         )}
