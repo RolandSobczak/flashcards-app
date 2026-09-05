@@ -180,6 +180,20 @@ def _api_add_cards(set_id, cards):
                     headers={"Content-Type": "application/json"})
 
 
+def _api_delete_card(card_id):
+    return _request("DELETE", f"/api/cards/{int(card_id)}")
+
+
+def _api_reorder_cards(set_id, card_ids):
+    if not isinstance(card_ids, list) or not card_ids:
+        raise ApiError("card_ids musi być niepustą listą identyfikatorów kart")
+    if len(set(card_ids)) != len(card_ids):
+        raise ApiError("card_ids zawiera powtórzenia")
+    body = json.dumps({"cardIds": [int(i) for i in card_ids]}).encode("utf-8")
+    return _request("PUT", f"/api/sets/{int(set_id)}/cards/order", data=body,
+                    headers={"Content-Type": "application/json"})
+
+
 def _api_delete_set(set_id):
     _request("DELETE", f"/api/sets/{int(set_id)}")
     return {"deleted": int(set_id)}
@@ -223,6 +237,16 @@ def self_check():
         else:  # pragma: no cover
             raise AssertionError(f"walidacja przepuściła {bad!r}")
     _validate_cards([{"question": "alias frontu też jest w porządku"}])
+
+    # Kolejność: powtórzenia i pusta lista odpadają zanim cokolwiek poleci
+    # na sieć, bo backend odrzuciłby je dopiero jako 400 bez wskazówki.
+    for bad in ([], [1, 1, 2], "nie lista"):
+        try:
+            _api_reorder_cards(1, bad)
+        except ApiError:
+            pass
+        else:  # pragma: no cover
+            raise AssertionError(f"kolejność przepuściła {bad!r}")
 
     assert FORMAT_DOC.exists(), f"brak specyfikacji formatu: {FORMAT_DOC}"
 
@@ -341,6 +365,27 @@ def main():
                 fields["backImage"] = ""
             return _api_update_card(card_id, fields)
         return _guard(run)
+
+    @mcp.tool()
+    def delete_card(card_id: int) -> str:
+        """Delete a single card and return the set without it.
+
+        Remaining cards are renumbered so positions stay contiguous, and the
+        card's images are removed from storage. Refuses to delete the last
+        card of a set - use delete_set for that.
+
+        Irreversible - ask the user before calling this.
+        """
+        return _guard(lambda: _api_delete_card(card_id))
+
+    @mcp.tool()
+    def reorder_cards(set_id: int, card_ids: list[int]) -> str:
+        """Reorder a set's cards to match the given list of card ids.
+
+        The list must contain every card of the set exactly once - get the
+        current ids and order from get_set first, then pass them rearranged.
+        """
+        return _guard(lambda: _api_reorder_cards(set_id, card_ids))
 
     @mcp.tool()
     def delete_set(set_id: int) -> str:

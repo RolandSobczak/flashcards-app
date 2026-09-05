@@ -79,6 +79,14 @@ jobs:
             -d '{"cards":[{"front":"x"}]}' http://127.0.0.1:8080/api/sets/1/cards)
           echo "POST /api/sets/1/cards bez sesji: $kod"
           [ "$kod" = "401" ] || { echo "::error::dopisywanie kart bez sesji powinno zwrócić 401, zwróciło $kod"; exit 1; }
+          # To samo dla kasowania karty i zmiany kolejności — obie zmieniają cudze dane.
+          kod=$(curl -s -o /dev/null -w '%{http_code}' -X DELETE http://127.0.0.1:8080/api/cards/1)
+          echo "DELETE /api/cards/1 bez sesji: $kod"
+          [ "$kod" = "401" ] || { echo "::error::kasowanie karty bez sesji powinno zwrócić 401, zwróciło $kod"; exit 1; }
+          kod=$(curl -s -o /dev/null -w '%{http_code}' -X PUT -H 'Content-Type: application/json' \
+            -d '{"cardIds":[1]}' http://127.0.0.1:8080/api/sets/1/cards/order)
+          echo "PUT /api/sets/1/cards/order bez sesji: $kod"
+          [ "$kod" = "401" ] || { echo "::error::zmiana kolejności bez sesji powinna zwrócić 401, zwróciło $kod"; exit 1; }
 
       - name: Logi, gdy coś padło
         if: failure()
