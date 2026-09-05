@@ -13,7 +13,7 @@ from . import storage
 from .auth import get_current_user
 from .db import get_db
 from .models import CardModel, SetModel, UserModel
-from .schemas import CardOut, CardsIn, CardUpdate, SetDetail, SetSummary
+from .schemas import CardOrderIn, CardOut, CardsIn, CardUpdate, SetDetail, SetSummary
 
 router = APIRouter(prefix="/api", tags=["sets"])
 
@@ -137,14 +137,7 @@ def get_set(set_id: int, db: Session = Depends(get_db), user: UserModel = Depend
     s = db.get(SetModel, set_id)
     if s is None:
         raise HTTPException(status_code=404, detail="Set not found")
-    return SetDetail(
-        id=s.id,
-        slug=s.slug,
-        label=s.label,
-        category=s.category,
-        createdAt=s.created_at,
-        cards=[_card_out(c) for c in s.cards],
-    )
+    return _set_detail(s)
 
 
 def _export_image_ref(
@@ -262,14 +255,7 @@ async def create_set(
 
     db.commit()
     db.refresh(db_set)
-    return SetDetail(
-        id=db_set.id,
-        slug=db_set.slug,
-        label=db_set.label,
-        category=db_set.category,
-        createdAt=db_set.created_at,
-        cards=[_card_out(c) for c in db_set.cards],
-    )
+    return _set_detail(db_set)
 
 
 @router.post("/sets/{set_id}/cards", response_model=SetDetail, status_code=201)
@@ -321,14 +307,7 @@ def add_cards(
 
     db.commit()
     db.refresh(s)
-    return SetDetail(
-        id=s.id,
-        slug=s.slug,
-        label=s.label,
-        category=s.category,
-        createdAt=s.created_at,
-        cards=[_card_out(c) for c in s.cards],
-    )
+    return _set_detail(s)
 
 
 @router.delete("/sets/{set_id}", status_code=204)
@@ -381,6 +360,86 @@ def update_card(
     db.commit()
     db.refresh(card)
     return _card_out(card)
+
+
+def _set_detail(s: SetModel) -> SetDetail:
+    return SetDetail(
+        id=s.id,
+        slug=s.slug,
+        label=s.label,
+        category=s.category,
+        createdAt=s.created_at,
+        cards=[_card_out(c) for c in s.cards],
+    )
+
+
+@router.delete("/cards/{card_id}", response_model=SetDetail)
+def delete_card(card_id: int, db: Session = Depends(get_db), user: UserModel = Depends(get_current_user)):
+    """Kasuje jedną kartę i zwraca zestaw po zmianie.
+
+    Pozostałe karty są przenumerowywane, żeby pozycje zostały ciągłe — bez
+    tego licznik „Karta 3 / 5" liczyłby dziury. Obrazki karty znikają razem
+    z nią; klucze obiektów pozostałych kart się nie zmieniają, bo trzyma je
+    kolumna, a nie pozycja.
+    """
+    card = db.get(CardModel, card_id)
+    if card is None:
+        raise HTTPException(status_code=404, detail="Card not found")
+    s = card.set
+    if s.owner_id != user.id:
+        raise HTTPException(status_code=403, detail="Nie jesteś właścicielem tego zestawu")
+    if len(s.cards) == 1:
+        raise HTTPException(
+            status_code=400,
+            detail="To ostatnia karta zestawu — skasuj cały zestaw zamiast niej",
+        )
+
+    for key in (card.front_image_key, card.back_image_key):
+        if key:
+            storage.delete_object(key)
+
+    db.delete(card)
+    db.flush()
+    db.refresh(s)
+    for position, remaining in enumerate(s.cards):
+        remaining.position = position
+
+    db.commit()
+    db.refresh(s)
+    return _set_detail(s)
+
+
+@router.put("/sets/{set_id}/cards/order", response_model=SetDetail)
+def reorder_cards(
+    set_id: int, payload: CardOrderIn, db: Session = Depends(get_db), user: UserModel = Depends(get_current_user)
+):
+    """Ustawia kolejność kart według podanej listy identyfikatorów.
+
+    Lista musi być pełną permutacją kart zestawu — częściowa kolejność
+    zostawiłaby resztę na pozycjach, które już do kogoś należą.
+    """
+    s = db.get(SetModel, set_id)
+    if s is None:
+        raise HTTPException(status_code=404, detail="Set not found")
+    if s.owner_id != user.id:
+        raise HTTPException(status_code=403, detail="Nie jesteś właścicielem tego zestawu")
+
+    wanted = payload.cardIds
+    if len(set(wanted)) != len(wanted):
+        raise HTTPException(status_code=400, detail="cardIds zawiera powtórzenia")
+    if set(wanted) != {c.id for c in s.cards}:
+        raise HTTPException(
+            status_code=400,
+            detail=f"cardIds musi zawierać dokładnie karty tego zestawu ({len(s.cards)} sztuk)",
+        )
+
+    by_id = {c.id: c for c in s.cards}
+    for position, card_id in enumerate(wanted):
+        by_id[card_id].position = position
+
+    db.commit()
+    db.refresh(s)
+    return _set_detail(s)
 
 
 @router.get("/images/{key:path}")

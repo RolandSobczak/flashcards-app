@@ -14,6 +14,8 @@ MinIO bezpośrednio, więc obowiązują te same reguły własności i autoryzacj
 | `create_set(label, cards, category)` | zakłada zestaw z listy kart |
 | `add_cards(set_id, cards)` | dopisuje karty na koniec istniejącego zestawu |
 | `update_card(card_id, ...)` | edytuje pojedynczą kartę: treść, legendę, obrazki |
+| `delete_card(card_id)` | kasuje jedną kartę i przenumerowuje pozostałe |
+| `reorder_cards(set_id, card_ids)` | ustawia kolejność kart |
 | `delete_set(set_id)` | kasuje zestaw wraz z kartami i obrazkami |
 | `set_format()` | pełna specyfikacja formatu karty (`src/docs/set-format.md`) |
 
@@ -33,6 +35,17 @@ ważności — inaczej niż przy skasowaniu i założeniu go od nowa.
 
 Skasowanie obrazka to `clear_front_image: true` (albo `clear_back_image`).
 Identyfikatory kart bierze się z `get_set`.
+
+### Kolejność i kasowanie kart
+
+`reorder_cards` wymaga **pełnej** listy identyfikatorów zestawu — częściowa
+kolejność zostawiłaby resztę kart na pozycjach, które już do kogoś należą.
+`delete_card` przenumerowuje pozostałe karty, żeby pozycje były ciągłe, i
+odmawia skasowania ostatniej karty zestawu (od tego jest `delete_set`).
+
+Klucz obiektu obrazka w MinIO ma losowy sufiks, więc przenumerowanie pozycji
+nigdy nie sprawi, że dwie karty trafią na ten sam klucz. Bez tego zamiana
+kolejności i późniejsza podmiana zdjęcia nadpisałaby obrazek sąsiedniej karty.
 
 ```
 get_set(21)                                    # znajdź id karty

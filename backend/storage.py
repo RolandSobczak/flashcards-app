@@ -2,6 +2,7 @@ import base64
 import binascii
 import io
 import re
+import secrets
 from dataclasses import dataclass
 
 from minio import Minio
@@ -67,8 +68,16 @@ def decode_image(value: str | None) -> DecodedImage | None:
 
 
 def object_key(set_id: int, card_position: int, side: str, content_type: str) -> str:
+    """Buduje klucz obiektu dla obrazka karty.
+
+    Pozycja jest w nazwie tylko dla czytelności — o tym, którego obiektu używa
+    karta, decyduje kolumna front_image_key/back_image_key. Losowy sufiks jest
+    tu po to, żeby klucz nigdy nie zależał wyłącznie od pozycji: po zmianie
+    kolejności albo skasowaniu karty pozycje się przesuwają i dwie karty
+    wyliczyłyby ten sam klucz, nadpisując sobie zdjęcia.
+    """
     ext = _EXT_BY_CONTENT_TYPE.get(content_type, "bin")
-    return f"sets/{set_id}/{card_position}-{side}.{ext}"
+    return f"sets/{set_id}/{card_position}-{side}-{secrets.token_hex(4)}.{ext}"
 
 
 def content_type_for_filename(name: str) -> str:

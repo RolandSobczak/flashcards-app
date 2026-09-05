@@ -27,6 +27,10 @@ class CardsIn(BaseModel):
     cards: list[dict]
 
 
+class CardOrderIn(BaseModel):
+    cardIds: list[int]
+
+
 class RequestCodeIn(BaseModel):
     email: str
 
