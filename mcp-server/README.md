@@ -12,11 +12,31 @@ MinIO bezpośrednio, więc obowiązują te same reguły własności i autoryzacj
 | `list_sets` | lista zestawów zalogowanego użytkownika: id, slug, etykieta, kategoria, liczba kart |
 | `get_set(set_id)` | jeden zestaw wraz ze wszystkimi kartami |
 | `create_set(label, cards, category)` | zakłada zestaw z listy kart |
+| `update_card(card_id, ...)` | edytuje pojedynczą kartę: treść, legendę, obrazki |
 | `delete_set(set_id)` | kasuje zestaw wraz z kartami i obrazkami |
 | `set_format()` | pełna specyfikacja formatu karty (`src/docs/set-format.md`) |
 
 Dopisywania kart do istniejącego zestawu **nie ma**, bo API nie ma takiego
-endpointu — `create_set` dostaje komplet kart w jednym wywołaniu.
+endpointu — `create_set` dostaje komplet kart w jednym wywołaniu. Pojedynczą
+kartę można za to zmienić w miejscu przez `update_card`, bez ruszania reszty
+zestawu i bez utraty jego id.
+
+### Podmiana obrazka
+
+`update_card` przyjmuje w `front_image` / `back_image`:
+
+- **ścieżkę do lokalnego pliku** — serwer wczytuje go i wysyła inline jako
+  data URI, backend zapisuje w MinIO i **kasuje obiekt, który zastąpił**,
+- **adres http(s)** — zapisany jako odnośnik zewnętrzny, bez kopiowania,
+- **gotowe data URI**.
+
+Skasowanie obrazka to `clear_front_image: true` (albo `clear_back_image`).
+Identyfikatory kart bierze się z `get_set`.
+
+```
+get_set(21)                                    # znajdź id karty
+update_card(card_id=413, front_image="~/rys/nowy.png")
+```
 
 ## Uruchomienie
 

@@ -24,7 +24,9 @@ Kontrola bez sieci i bez zależności:
     python3 mcp-server/server.py --self-check
 """
 
+import base64
 import json
+import mimetypes
 import os
 import sys
 import urllib.error
@@ -134,6 +136,39 @@ def _api_create_set(label, cards, category=None):
     return _request("POST", "/api/sets", data=body, headers={"Content-Type": content_type})
 
 
+def as_image_value(value):
+    """Zamienia wartość obrazka na coś, co przyjmie backend.
+
+    Ścieżka do istniejącego pliku idzie jako data URI — backend dekoduje ją
+    i wrzuca do MinIO. Adres http(s) i gotowe data URI przechodzą bez zmian:
+    pierwszy backend zapisze jako odnośnik zewnętrzny, drugi zdekoduje tak
+    samo jak plik.
+    """
+    if value is None:
+        return None
+    if value.startswith(("http://", "https://", "data:")):
+        return value
+    path = Path(value).expanduser()
+    if not path.is_file():
+        raise ApiError(
+            f"Nie znalazłem pliku {path}. Podaj ścieżkę do istniejącego obrazka, "
+            "adres http(s) albo gotowe data URI."
+        )
+    content_type = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
+    if not content_type.startswith("image/"):
+        raise ApiError(f"{path.name} nie wygląda na obrazek (rozpoznany typ: {content_type}).")
+    return f"data:{content_type};base64," + base64.b64encode(path.read_bytes()).decode("ascii")
+
+
+def _api_update_card(card_id, fields):
+    payload = {k: v for k, v in fields.items() if v is not None}
+    if not payload:
+        raise ApiError("Nie podano żadnego pola do zmiany.")
+    body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+    return _request("PATCH", f"/api/cards/{int(card_id)}", data=body,
+                    headers={"Content-Type": "application/json"})
+
+
 def _api_delete_set(set_id):
     _request("DELETE", f"/api/sets/{int(set_id)}")
     return {"deleted": int(set_id)}
@@ -184,6 +219,28 @@ def self_check():
     out.encode("ascii")
     assert "Format zestawu fiszek" in json.loads(out)["format"]
 
+    # as_image_value: plik idzie inline, adresy przechodzą bez zmian,
+    # a nieistniejąca ścieżka kończy się czytelnym błędem, nie 400 z backendu.
+    import tempfile
+
+    png = bytes.fromhex("89504e470d0a1a0a")
+    with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as fh:
+        fh.write(png)
+        tmp = fh.name
+    assert as_image_value(tmp).startswith("data:image/png;base64,")
+    assert base64.b64decode(as_image_value(tmp).split(",", 1)[1]) == png
+    for passthrough in ("https://example.test/a.png", "data:image/jpeg;base64,AAAA"):
+        assert as_image_value(passthrough) == passthrough
+    assert as_image_value(None) is None
+    for bad in (tmp + ".nie-ma", __file__):
+        try:
+            as_image_value(bad)
+        except ApiError:
+            pass
+        else:  # pragma: no cover
+            raise AssertionError(f"as_image_value przepuścił {bad!r}")
+    os.unlink(tmp)
+
     blad = _guard(lambda: (_ for _ in ()).throw(ApiError("Zażółć gęślą jaźń")))
     blad.encode("ascii")
     assert json.loads(blad)["error"] == "Zażółć gęślą jaźń"
@@ -224,9 +281,45 @@ def main():
         matching cards. The minimal card is {"front": "...", "back": "..."}.
 
         A set cannot be extended later: the API has no append-card endpoint,
-        so pass the complete list in one call.
+        so pass the complete list in one call. Individual cards can still be
+        edited afterwards with update_card.
         """
         return _guard(lambda: _api_create_set(label, cards, category))
+
+    @mcp.tool()
+    def update_card(
+        card_id: int,
+        front: str | None = None,
+        back: str | None = None,
+        symbols: str | None = None,
+        front_image: str | None = None,
+        back_image: str | None = None,
+        clear_front_image: bool = False,
+        clear_back_image: bool = False,
+    ) -> str:
+        """Edit one existing card in place, without touching the rest of the set.
+
+        Card ids come from get_set. Only the arguments you pass are changed.
+
+        `front_image` / `back_image` accept a path to a local image file (it is
+        read and sent inline, the backend stores it and deletes the object it
+        replaced), an http(s) URL, or a ready data URI. Pass
+        clear_front_image / clear_back_image to remove an image instead.
+        """
+        def run():
+            fields = {
+                "front": front,
+                "back": back,
+                "symbols": symbols,
+                "frontImage": None if clear_front_image else as_image_value(front_image),
+                "backImage": None if clear_back_image else as_image_value(back_image),
+            }
+            if clear_front_image:
+                fields["frontImage"] = ""
+            if clear_back_image:
+                fields["backImage"] = ""
+            return _api_update_card(card_id, fields)
+        return _guard(run)
 
     @mcp.tool()
     def delete_set(set_id: int) -> str:
