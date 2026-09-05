@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Motyw startowy w kolorze tła aplikacji, żeby uruchomienie nie mrugało
+         białym ekranem przed pierwszą klatką Compose'a. -->
+    <style name="Theme.Fiszki" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">#0F0F13</item>
+        <item name="android:statusBarColor">#0F0F13</item>
+        <item name="android:navigationBarColor">#0F0F13</item>
+    </style>
+</resources>

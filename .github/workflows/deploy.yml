@@ -5,6 +5,12 @@ name: Wdrożenie
 on:
   push:
     branches: [main]
+    # Aplikacja mobilna nie jedzie na ten VPS, więc sama zmiana w mobile/
+    # nie ma powodu przebudowywać i wdrażać serwisu webowego.
+    paths-ignore:
+      - 'mobile/**'
+      - 'mcp-server/**'
+      - '**/*.md'
   workflow_dispatch:
     inputs:
       powod:

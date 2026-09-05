@@ -37,3 +37,10 @@ public/horla_figures/
 
 # sekrety produkcyjne i lokalne, nigdy do repozytorium
 .env
+
+# Android / Gradle
+mobile/local.properties
+mobile/.gradle/
+mobile/build/
+mobile/**/build/
+.kotlin/
