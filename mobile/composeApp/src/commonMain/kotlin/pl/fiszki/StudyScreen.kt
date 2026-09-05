@@ -82,18 +82,18 @@ fun StudyScreen(state: AppState, set: SetDetail) {
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                Text(if (odwrocona) karta.back else karta.front, style = MaterialTheme.typography.bodyLarge)
+                CardText(if (odwrocona) karta.back else karta.front)
 
                 val obraz = if (odwrocona) karta.backImage else karta.frontImage
                 obraz?.let { RemoteImage(state.api, it, Modifier.heightIn(max = 320.dp)) }
 
                 if (odwrocona) {
                     karta.symbols?.split(';')?.map(String::trim)?.filter(String::isNotEmpty)?.forEach {
-                        Text("• $it", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        CardText("• $it", style = MaterialTheme.typography.bodySmall)
                     }
                     karta.matching?.pairs?.forEach { para ->
                         if (para.size >= 2) {
-                            Text("${para[0]} → ${para[1]}", style = MaterialTheme.typography.bodyMedium)
+                            CardText("${para[0]} → ${para[1]}", style = MaterialTheme.typography.bodyMedium)
                         }
                     }
                 }

@@ -13,17 +13,44 @@ nie ma własnego backendu ani własnej bazy.
 - runda nauki: karta, odwrócenie, ocena „umiem" / „jeszcze nie umiem",
   licznik opanowanych, kolejna runda z resztą,
 - obrazki kart (endpoint jest za bearerem, więc bajty pobiera klient API,
-  a dekoduje `decodeToImageBitmap`).
+  a dekoduje `decodeToImageBitmap`),
+- **wzory LaTeX** — tym samym KaTeX-em co w webie, wczytanym z zasobów
+  aplikacji (patrz niżej).
 
 ## Czego jeszcze nie ma
 
-- **LaTeX** — `front`/`back` renderują się jako zwykły tekst, więc `$\frac{1}{2}$`
-  widać dosłownie. W webie robi to KaTeX; na Compose trzeba albo osadzić WebView
-  z KaTeX-em (Android) i `WKWebView` (iOS), albo złożyć własny renderer.
 - **karty wyboru** — pytania z odpowiedziami a/b/c/d pokazują się jako tekst,
   bez klikalnych opcji (web parsuje je z treści karty).
 - **tryb offline** — wszystko idzie z sieci przy każdym uruchomieniu.
 - **edycja** — kart i zestawów nie da się tu zmieniać; od tego jest web i MCP.
+
+## Wzory
+
+Karta bez wzoru renderuje się zwykłym `Text` — to większość kart, jest szybciej
+i tekst daje się zaznaczać. Dopiero obecność wzoru uruchamia widok platformy
+z KaTeX-em: na Androidzie `WebView`, na iOS `WKWebView`.
+
+Za wzór uchodzą dopiero **dwa** nieucieczkowane znaki dolara, żeby cena w rodzaju
+„koszt 5$" nie ładowała ciężkiego widoku. Treść karty jest escapowana — poza
+dolarami, bo po nich KaTeX rozpoznaje wzory — więc karta nie wstrzyknie
+znaczników do dokumentu.
+
+KaTeX leży w `composeApp/src/androidMain/assets/katex/`: `katex.min.js`,
+`auto-render.min.js`, `katex.min.css` i 20 fontów `woff2`, razem ok. 590 kB.
+Pochodzą z tej samej wersji, której używa web (`katex` w `package.json`), więc
+wzór wygląda tak samo w obu klientach i nie ma drugiego renderera do
+utrzymania. Nic nie idzie po sieci.
+
+`WebView` w przewijanej kolumnie nie potrafi dopasować wysokości do treści,
+więc strona po wyrenderowaniu i po dociągnięciu fontów raportuje własną
+wysokość mostem JavaScriptu (`AndroidPomiar`), a composable ustawia ją jako
+wysokość widoku.
+
+**Do sprawdzenia na urządzeniu:** most pomiaru wysokości oraz wczytywanie
+zasobów z `file:///android_asset/` przy `allowFileAccess = false`. Dokumentacja
+mówi, że zasoby i tak pozostają dostępne, ale to jedyne miejsce tej zmiany,
+którego nie potwierdziłem uruchomieniem. Sam dokument HTML wraz z renderowaniem
+wzorów sprawdziłem w przeglądarce.
 
 ## Budowanie
 
