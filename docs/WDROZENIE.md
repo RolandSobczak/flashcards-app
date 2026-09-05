@@ -55,14 +55,53 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile full c
 
 ## Poczta
 
-Domyślnie w stacku siedzi **Mailpit** — łapie wychodzącą pocztę i nigdzie jej nie wysyła. Logowanie jest bezhasłowe, kodem z maila, więc **nikt z zewnątrz się nie zaloguje**: kod trzeba odczytać z Mailpita przez SSH.
+Kody logowania wychodzą przez **Outsidera** — zewnętrzny serwer pocztowy Mikrusa, w cenie abonamentu, bez dodatkowej opłaty. Skrzynka `fiszki@r164.mikr.dev`, wysyłka przez `smtp.r164.mikr.dev:587` ze STARTTLS.
+
+Konfiguracja siedzi w `/opt/flashcards/.env`:
+
+```
+SMTP_HOST=smtp.r164.mikr.dev
+SMTP_PORT=587
+SMTP_FROM=fiszki@r164.mikr.dev
+SMTP_USERNAME=fiszki@r164.mikr.dev
+SMTP_PASSWORD=...
+SMTP_USE_TLS=true
+```
+
+Panel skrzynek: https://outsider.mikr.us:2222 (DirectAdmin, login `r164`). Hasło do panelu przyszło mailem przy aktywacji usługi; jest też w logach operacji Mikrusa (`/logs`, wpis `outsider`). Skrzynka ma limit 200 wysłanych wiadomości na dobę i 100 MB quoty.
+
+Założenie kolejnej skrzynki przez API DirectAdmina:
+
+```bash
+curl -k -u 'r164:HASLO_PANELU' https://outsider.mikr.us:2222/CMD_API_POP \
+  -d action=create -d domain=r164.mikr.dev -d user=nazwa \
+  -d passwd=TAJNE -d passwd2=TAJNE -d quota=100 -d limit=200
+```
+
+`limit=0` (bez limitu) jest odrzucane — trzeba podać konkretną liczbę.
+
+**Dostarczalność.** Domena `r164.mikr.dev` ma SPF obejmujący Outsidera (`v=spf1 a mx ...`, a rekord `a` wskazuje na `95.217.59.141`, czyli hosta wysyłającego), więc SPF przechodzi. DKIM-a ani DMARC-a **nie ma** — pod `*.mikr.dev` stoi wildcardowy TXT, który zwraca ten sam wpis SPF również pod `_dmarc` i `_domainkey`. Poczta bez DKIM-a bywa u dużych dostawców traktowana podejrzliwie, więc pierwszą wiadomość warto poszukać w spamie i oznaczyć „to nie spam".
+
+Gdyby Gmail zaczął odrzucać: alternatywą jest własna domena z własnym SPF i DKIM (dodana w panelu Outsidera) albo zewnętrzny SMTP, np. konto Google z hasłem aplikacji — wtedy zmieniają się tylko zmienne `SMTP_*` w `.env` i `up -d`.
+
+Mailpit został w stacku jako usługa lokalna, ale nie łapie już poczty aplikacji — backend gada bezpośrednio z Outsiderem. Jego konsola nie jest wystawiona publicznie i nie powinna być.
+
+Test wysyłki z pominięciem aplikacji:
 
 ```bash
 ssh -i ~/.ssh/mikrus -p 10164 root@roman164.mikrus.xyz \
-  'docker exec flashcards-mailpit-1 wget -qO- http://localhost:8025/api/v1/messages | head -c 500'
+  'cd /opt/flashcards && set -a && . ./.env && set +a && python3 -c "
+import os, smtplib, ssl
+from email.message import EmailMessage
+m = EmailMessage(); m[\"Subject\"] = \"test\"
+m[\"From\"] = os.environ[\"SMTP_FROM\"]; m[\"To\"] = \"ty@gmail.com\"
+m.set_content(\"test\")
+s = smtplib.SMTP(os.environ[\"SMTP_HOST\"], 587, timeout=30)
+s.starttls(context=ssl.create_default_context())
+s.login(os.environ[\"SMTP_USERNAME\"], os.environ[\"SMTP_PASSWORD\"])
+s.send_message(m); s.quit(); print(\"wyslano\")
+"'
 ```
-
-Konsola Mailpita **nie jest** wystawiona publicznie i nie powinna być — pokazuje kody logowania wszystkich użytkowników. Żeby aplikacja przyjmowała zwykłych użytkowników, wpisz prawdziwy SMTP do `.env` i zrób `up -d`.
 
 ## CI/CD
 
