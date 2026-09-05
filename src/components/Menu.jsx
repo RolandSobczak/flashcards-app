@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { Upload, TriangleAlert } from 'lucide-react'
 import { createSet, getSet, listSets } from '../api'
 
 function groupByCategory(sets) {
@@ -57,7 +58,7 @@ export default function Menu({ onData, onTasks, onDocs }) {
     <div className="menu">
       {error && (
         <div className="tasks-error">
-          <div className="tasks-error-icon">⚠</div>
+          <div className="tasks-error-icon"><TriangleAlert size={20} aria-hidden="true" /></div>
           <div>{error}</div>
         </div>
       )}
@@ -112,7 +113,7 @@ export default function Menu({ onData, onTasks, onDocs }) {
         onDragLeave={() => setDragOver(false)}
         onDrop={e => { e.preventDefault(); setDragOver(false); uploadFile(e.dataTransfer.files[0]) }}
       >
-        <div className="upload-icon">📂</div>
+        <div className="upload-icon"><Upload size={26} aria-hidden="true" /></div>
         <p>{uploading ? 'Zapisuję…' : 'Kliknij lub przeciągnij plik JSON albo ZIP'}</p>
         <input
           ref={fileRef}

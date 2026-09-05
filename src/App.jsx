@@ -1,4 +1,5 @@
 import { useEffect, useState, useSyncExternalStore } from 'react'
+import { LayoutGrid, ArrowLeft, LogOut } from 'lucide-react'
 import Login from './Login'
 import { subscribe, getToken, getUser, logout } from './auth'
 import TasksView from './TasksView'
@@ -267,29 +268,41 @@ export default function App() {
 
   return (
     <div className="app">
-      <div className="header">
-        <div>
+      <header className="header">
+        <div className="header-brand">
           <h1>Fiszki</h1>
           {phase !== 'upload' && phase !== 'tasks' && phase !== 'docs' && setName && (
             <div className="set-name">{setName}</div>
           )}
         </div>
-        <div className="header-actions">
+        {/* Etykiety chowają się poniżej 640 px (patrz .btn-label w App.css),
+            więc na telefonie zostają same ikony i pasek mieści się w jednym
+            rzędzie zamiast zawijać na trzy. */}
+        <nav className="header-actions">
           {hasLoadedSet && phase !== 'browse' && (
-            <button className="btn-secondary" onClick={openBrowse}>Wszystkie karty</button>
+            <button className="btn-secondary btn-icon" onClick={openBrowse} title="Wszystkie karty" aria-label="Wszystkie karty">
+              <LayoutGrid size={17} aria-hidden="true" />
+              <span className="btn-label">Wszystkie karty</span>
+            </button>
           )}
-          {studyVisible && (
-            <button className="btn-secondary" onClick={handleBackToMenu}>Wróć do menu</button>
-          )}
-          {phase === 'chunkSetup' && (
-            <button className="btn-secondary" onClick={handleBackToMenu}>← Menu</button>
+          {(studyVisible || phase === 'chunkSetup') && (
+            <button className="btn-secondary btn-icon" onClick={handleBackToMenu} title="Wróć do menu" aria-label="Wróć do menu">
+              <ArrowLeft size={17} aria-hidden="true" />
+              <span className="btn-label">Menu</span>
+            </button>
           )}
           {user && (
-            <span className="user-badge" title={user.email}>{user.email}</span>
+            <span className="user-badge" title={user.email}>
+              <span className="user-avatar" aria-hidden="true">{user.email.slice(0, 1).toUpperCase()}</span>
+              <span className="user-email">{user.email}</span>
+            </span>
           )}
-          <button className="btn-secondary" onClick={logout}>Wyloguj</button>
-        </div>
-      </div>
+          <button className="btn-secondary btn-icon" onClick={logout} title="Wyloguj" aria-label="Wyloguj">
+            <LogOut size={17} aria-hidden="true" />
+            <span className="btn-label">Wyloguj</span>
+          </button>
+        </nav>
+      </header>
 
       {phase === 'upload' && (
         <Menu onData={applyData} onTasks={() => setPhase('tasks')} onDocs={() => setPhase('docs')} />
