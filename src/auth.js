@@ -65,6 +65,14 @@ async function detail(res) {
   }
 }
 
+// Błąd niosący status HTTP. Bez niego wołający dostaje sam tekst i nie
+// odróżni odmowy od 429, które mówi „kod już poszedł i wciąż jest ważny".
+async function httpError(res) {
+  const err = new Error((await detail(res)) || `HTTP ${res.status}`)
+  err.status = res.status
+  return err
+}
+
 // fetch that attaches the bearer token and, on a 401, clears the session so
 // the app falls back to the login screen instead of showing a dead view.
 export async function authFetch(url, options = {}) {
@@ -81,7 +89,7 @@ export async function requestCode(email) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email }),
   })
-  if (!res.ok) throw new Error((await detail(res)) || `HTTP ${res.status}`)
+  if (!res.ok) throw await httpError(res)
 }
 
 export async function verifyCode(email, code) {
@@ -90,7 +98,7 @@ export async function verifyCode(email, code) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, code }),
   })
-  if (!res.ok) throw new Error((await detail(res)) || `HTTP ${res.status}`)
+  if (!res.ok) throw await httpError(res)
   const data = await res.json()
   setAuth(data.token, data.user)
   return data
