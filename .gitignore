@@ -33,3 +33,6 @@ backend/.venv/
 backend/.env
 
 public/horla_figures/
+
+# sekrety produkcyjne i lokalne, nigdy do repozytorium
+.env

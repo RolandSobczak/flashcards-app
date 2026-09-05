@@ -5,15 +5,6 @@ import 'katex/dist/katex.min.css'
 export default function LatexContent({ text }) {
   if (!text) return null
 
-  const parts = []
-  // Split on $$...$$ first, then $...$
-  const displayRegex = /\$\$([\s\S]+?)\$\$/g
-  const inlineRegex = /\$((?:[^$\\]|\\.)+?)\$/g
-
-  let remaining = text
-  let key = 0
-
-  // Process display math blocks
   const segments = []
   let lastIndex = 0
   let match
