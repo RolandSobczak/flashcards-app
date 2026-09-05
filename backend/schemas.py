@@ -23,6 +23,10 @@ class CardUpdate(BaseModel):
     backImage: str | None = None
 
 
+class CardsIn(BaseModel):
+    cards: list[dict]
+
+
 class RequestCodeIn(BaseModel):
     email: str
 

@@ -74,6 +74,11 @@ jobs:
           kod=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/api/sets)
           echo "GET /api/sets bez sesji: $kod"
           [ "$kod" = "401" ] || { echo "::error::API bez sesji powinno zwrócić 401, zwróciło $kod"; exit 1; }
+          # Dopisywanie kart też musi wymagać sesji — endpoint zmienia cudze dane.
+          kod=$(curl -s -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' \
+            -d '{"cards":[{"front":"x"}]}' http://127.0.0.1:8080/api/sets/1/cards)
+          echo "POST /api/sets/1/cards bez sesji: $kod"
+          [ "$kod" = "401" ] || { echo "::error::dopisywanie kart bez sesji powinno zwrócić 401, zwróciło $kod"; exit 1; }
 
       - name: Logi, gdy coś padło
         if: failure()
