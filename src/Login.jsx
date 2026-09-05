@@ -24,7 +24,15 @@ export default function Login() {
       setStep('code')
       setInfo('Wysłaliśmy kod na podany adres. Sprawdź skrzynkę (w trybie dev: Mailpit — http://localhost:8026).')
     } catch (err) {
-      setError(err.message || 'Nie udało się wysłać kodu.')
+      // 429 to cooldown na ponowną wysyłkę, a nie odmowa: poprzedni kod
+      // wciąż jest ważny i leży w skrzynce. Zatrzymanie się na kroku
+      // „email" odcinałoby jedyne pole, w które można go wpisać.
+      if (err.status === 429) {
+        setStep('code')
+        setInfo('Kod już do Ciebie poszedł — sprawdź skrzynkę i wpisz go poniżej.')
+      } else {
+        setError(err.message || 'Nie udało się wysłać kodu.')
+      }
     } finally {
       setBusy(false)
     }
