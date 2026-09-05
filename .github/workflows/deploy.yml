@@ -1,0 +1,79 @@
+name: Wdrożenie
+
+# Wdraża aplikację na VPS po scaleniu do main.
+# Ręcznie: zakładka Actions → „Wdrożenie" → Run workflow.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      powod:
+        description: 'Po co wdrażamy (trafi do podsumowania)'
+        required: false
+        default: 'wdrożenie ręczne'
+
+concurrency:
+  group: wdrozenie-produkcja
+  cancel-in-progress: false
+
+jobs:
+  wdroz:
+    name: Wdróż na VPS
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Klucz SSH
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/deploy
+          chmod 600 ~/.ssh/deploy
+          ssh-keyscan -p ${{ secrets.VPS_PORT }} -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Wdrożenie
+        run: |
+          ssh -i ~/.ssh/deploy -p ${{ secrets.VPS_PORT }} \
+            ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} \
+            'set -e
+             cd ${{ secrets.VPS_PATH }}
+             git fetch --depth 1 origin main
+             git reset --hard origin/main
+             test -f .env || { echo "::error::brak pliku .env na serwerze"; exit 1; }
+             docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile full up -d --build --wait --wait-timeout 300
+             docker image prune -f
+             docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile full ps'
+
+      - name: Weryfikacja z serwera
+        run: |
+          ssh -i ~/.ssh/deploy -p ${{ secrets.VPS_PORT }} \
+            ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} \
+            'curl -fsS -o /dev/null -w "frontend: %{http_code}\n" http://127.0.0.1:8080/
+             kod=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8080/api/sets)
+             echo "API bez sesji: $kod"
+             [ "$kod" = "401" ] || exit 1'
+
+      - name: Weryfikacja z zewnątrz
+        run: |
+          for i in $(seq 1 10); do
+            kod=$(curl -s -o /dev/null -w '%{http_code}' -m 20 "${{ secrets.SITE_URL }}/" || true)
+            echo "próba $i: $kod"
+            [ "$kod" = "200" ] && exit 0
+            sleep 15
+          done
+          echo "::error::${{ secrets.SITE_URL }} nie odpowiedziało 200"
+          exit 1
+
+      - name: Logi, gdy coś padło
+        if: failure()
+        run: |
+          ssh -i ~/.ssh/deploy -p ${{ secrets.VPS_PORT }} \
+            ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} \
+            'cd ${{ secrets.VPS_PATH }} && docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile full logs --tail 80' || true
+
+      - name: Podsumowanie
+        if: always()
+        run: |
+          echo "### Wdrożenie fiszek" >> $GITHUB_STEP_SUMMARY
+          echo "- powód: ${{ github.event.inputs.powod || 'push na main' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- commit: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- adres: ${{ secrets.SITE_URL }}" >> $GITHUB_STEP_SUMMARY

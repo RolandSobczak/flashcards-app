@@ -1,0 +1,39 @@
+# Nakładka produkcyjna. Uruchamiana zawsze razem z bazowym plikiem:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile full up -d --build
+#
+# Robi trzy rzeczy: zdejmuje z bazy, MinIO, Mailpita i backendu porty publikowane
+# na hosta (na VPS-ie z publicznym IPv6 byłyby wystawione na świat), wstawia hasła
+# ze zmiennych środowiskowych zamiast deweloperskich wartości z docker-compose.yml
+# i zostawia na zewnątrz wyłącznie frontend na porcie 8080.
+services:
+  db:
+    ports: !override []
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+
+  minio:
+    ports: !override []
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+
+  mailpit:
+    ports: !override []
+
+  backend:
+    ports: !override []
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+      SMTP_HOST: ${SMTP_HOST:-mailpit}
+      SMTP_PORT: ${SMTP_PORT:-1025}
+      SMTP_FROM: ${SMTP_FROM:-fiszki@local.test}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_USE_TLS: ${SMTP_USE_TLS:-false}
+
+  frontend:
+    ports: !override ["8080:80"]

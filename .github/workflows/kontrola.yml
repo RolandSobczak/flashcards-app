@@ -1,0 +1,81 @@
+name: Kontrola
+
+# Sprawdza każdy pull request do main, zanim zmiany trafią na produkcję.
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Zależności
+        run: npm ci --no-audit --no-fund
+
+      - name: ESLint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+      - name: Czy build coś wyprodukował
+        run: test -s dist/index.html || { echo "::error::pusty dist/index.html"; exit 1; }
+
+  obrazy:
+    name: Obrazy i konfiguracja
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Scalona konfiguracja compose jest poprawna
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile full config > /tmp/scalona.yml
+
+      - name: Na produkcji wystaje tylko frontend na 8080
+        run: |
+          # Publikowane porty w scalonej konfiguracji: dokładnie jeden, 8080.
+          porty=$(grep -c 'published:' /tmp/scalona.yml || true)
+          echo "publikowanych portów: $porty"
+          [ "$porty" = "1" ] || { echo "::error::oczekiwano jednego publikowanego portu, jest $porty"; grep 'published:' /tmp/scalona.yml; exit 1; }
+          grep -q 'published: "8080"' /tmp/scalona.yml || { echo "::error::port 8080 nie jest publikowany"; exit 1; }
+
+      - name: Build obrazu backendu
+        run: docker build -f backend/Dockerfile -t flashcards-backend:kontrola .
+
+      - name: Build obrazu frontendu
+        run: docker build -f Dockerfile -t flashcards-frontend:kontrola .
+
+      - name: Stack wstaje i odpowiada
+        run: |
+          set -e
+          cat > .env <<'ENV'
+          POSTGRES_USER=flashcards
+          POSTGRES_PASSWORD=kontrola-ci
+          POSTGRES_DB=flashcards
+          MINIO_ROOT_USER=flashcards
+          MINIO_ROOT_PASSWORD=kontrola-ci-123
+          ENV
+          docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile full up -d --wait --wait-timeout 180
+          curl -fsS -o /dev/null http://127.0.0.1:8080/
+          kod=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/api/sets)
+          echo "GET /api/sets bez sesji: $kod"
+          [ "$kod" = "401" ] || { echo "::error::API bez sesji powinno zwrócić 401, zwróciło $kod"; exit 1; }
+
+      - name: Logi, gdy coś padło
+        if: failure()
+        run: docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile full logs --tail 50
+
+      - name: Sprzątanie
+        if: always()
+        run: docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile full down -v
