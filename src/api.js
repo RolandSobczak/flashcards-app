@@ -50,3 +50,18 @@ export function updateCard(id, payload) {
     body: JSON.stringify(payload),
   }).then(handle)
 }
+
+// Kasowanie karty i zmiana kolejności zwracają cały zestaw po zmianie —
+// backend przenumerowuje pozycje, więc odpowiedź jest jedynym pewnym źródłem
+// nowego układu.
+export function deleteCard(id) {
+  return authFetch(`/api/cards/${id}`, { method: 'DELETE' }).then(handle)
+}
+
+export function reorderCards(setId, cardIds) {
+  return authFetch(`/api/sets/${setId}/cards/order`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ cardIds }),
+  }).then(handle)
+}

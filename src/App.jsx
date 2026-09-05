@@ -237,6 +237,21 @@ export default function App() {
     setCards(prev => prev.map(c => (c.id === updated.id ? { ...c, ...updated } : c)))
   }
 
+  // Kasowanie karty i zmiana kolejności zwracają cały zestaw. Poza podmianą
+  // listy trzeba wyczyścić ślady po kartach, których już nie ma: kolejka i
+  // zbiór opanowanych trzymają identyfikatory, więc bez tego runda liczyłaby
+  // karty, do których nie da się dojść.
+  function handleCardsReplaced(nextCards) {
+    const validIds = new Set(nextCards.map(c => c.id))
+    setCards(nextCards)
+    setKnownIds(prev => new Set(Array.from(prev).filter(id => validIds.has(id))))
+    setQueue(prev => {
+      const kept = prev.filter(id => validIds.has(id))
+      setCurrentIdx(idx => Math.max(0, Math.min(idx, kept.length - 1)))
+      return kept
+    })
+  }
+
   function handleBackToMenu() {
     // Per-set progress is already persisted continuously (see the effect
     // above), so clearing the in-memory view here doesn't lose it — picking
@@ -317,7 +332,13 @@ export default function App() {
       )}
 
       {phase === 'browse' && (
-        <BrowseView cards={cards} onBack={closeBrowse} onCardUpdated={handleCardUpdated} />
+        <BrowseView
+          cards={cards}
+          setId={currentSetId}
+          onBack={closeBrowse}
+          onCardUpdated={handleCardUpdated}
+          onCardsReplaced={handleCardsReplaced}
+        />
       )}
 
       {phase === 'chunkSetup' && (
