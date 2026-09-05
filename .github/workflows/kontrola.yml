@@ -4,6 +4,8 @@ name: Kontrola
 on:
   pull_request:
     branches: [main]
+    paths-ignore:
+      - 'mobile/**'
   workflow_dispatch:
 
 jobs:
