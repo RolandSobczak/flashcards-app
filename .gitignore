@@ -29,6 +29,7 @@ scripts/
 backend/exercises.json
 backend/__pycache__/
 backend/**/__pycache__/
+mcp-server/__pycache__/
 backend/.venv/
 backend/.env
 

@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "fiszki": {
+      "command": "uv",
+      "args": ["run", "--script", "mcp-server/server.py"],
+      "env": {
+        "FLASHCARDS_URL": "http://localhost:8000",
+        "FLASHCARDS_TOKEN": "${FLASHCARDS_TOKEN}"
+      }
+    }
+  }
+}
