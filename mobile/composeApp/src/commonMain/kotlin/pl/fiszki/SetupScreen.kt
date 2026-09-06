@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -37,6 +38,7 @@ fun SetupScreen(state: AppState, set: SetDetail) {
     val liczba = set.cards.size
     val wznowienie = remember(set.id) { wznow(state.progress.load(set.id), set.cards) }
     var rozmiarPartii by remember(set.id) { mutableStateOf(10) }
+    var potwierdzKasowanie by remember(set.id) { mutableStateOf(false) }
     val partie = if (rozmiarPartii > 0) (liczba + rozmiarPartii - 1) / rozmiarPartii else 0
 
     Column(
@@ -111,5 +113,29 @@ fun SetupScreen(state: AppState, set: SetDetail) {
         OutlinedButton(onClick = state::openBrowse, modifier = Modifier.fillMaxWidth()) {
             Text("Wszystkie karty")
         }
+
+        TextButton(
+            onClick = { potwierdzKasowanie = true },
+            enabled = !state.mutating,
+            modifier = Modifier.fillMaxWidth(),
+        ) { Text("Usuń zestaw", color = MaterialTheme.colorScheme.error) }
+
+        state.error?.let {
+            Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+        }
+    }
+
+    if (potwierdzKasowanie) {
+        AlertDialog(
+            onDismissRequest = { potwierdzKasowanie = false },
+            title = { Text("Usunąć zestaw?") },
+            text = { Text("„${set.label}” — $liczba kart. Tego nie da się cofnąć.") },
+            confirmButton = {
+                Button(onClick = { potwierdzKasowanie = false; state.deleteSet(set.id) }) { Text("Usuń") }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = { potwierdzKasowanie = false }) { Text("Anuluj") }
+            },
+        )
     }
 }
