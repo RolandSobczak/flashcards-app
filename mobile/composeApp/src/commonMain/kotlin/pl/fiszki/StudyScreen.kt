@@ -70,6 +70,23 @@ fun StudyScreen(state: AppState, set: SetDetail) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
+        // Karta wyboru ma własny przebieg (opcje zamiast odwracania), więc
+        // dostaje własny widok razem z przyciskami oceny.
+        val mcq = parseMcq(karta.front)
+        val poprawna = mcq?.let { correctLetter(karta.back) }
+        if (mcq != null && poprawna != null) {
+            McqCard(
+                state = state,
+                card = karta,
+                mcq = mcq,
+                poprawna = poprawna,
+                onKnow = { ocena(true) },
+                onSkip = { ocena(false) },
+                modifier = Modifier.fillMaxWidth().weight(1f),
+            )
+            return@Column
+        }
+
         Card(
             modifier = Modifier.fillMaxWidth().weight(1f).clickable { odwrocona = !odwrocona },
         ) {
