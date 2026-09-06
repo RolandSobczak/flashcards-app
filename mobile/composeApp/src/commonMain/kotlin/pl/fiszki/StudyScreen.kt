@@ -70,6 +70,19 @@ fun StudyScreen(state: AppState, set: SetDetail) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
+        val pary = karta.matching?.pairs
+        if (pary != null && pary.size >= 2) {
+            MatchingCard(
+                state = state,
+                card = karta,
+                pary = pary,
+                onKnow = { ocena(true) },
+                onSkip = { ocena(false) },
+                modifier = Modifier.fillMaxWidth().weight(1f),
+            )
+            return@Column
+        }
+
         // Karta wyboru ma własny przebieg (opcje zamiast odwracania), więc
         // dostaje własny widok razem z przyciskami oceny.
         val mcq = parseMcq(karta.front)
@@ -107,11 +120,6 @@ fun StudyScreen(state: AppState, set: SetDetail) {
                 if (odwrocona) {
                     karta.symbols?.split(';')?.map(String::trim)?.filter(String::isNotEmpty)?.forEach {
                         CardText("• $it", style = MaterialTheme.typography.bodySmall)
-                    }
-                    karta.matching?.pairs?.forEach { para ->
-                        if (para.size >= 2) {
-                            CardText("${para[0]} → ${para[1]}", style = MaterialTheme.typography.bodyMedium)
-                        }
                     }
                 }
 
