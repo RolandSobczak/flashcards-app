@@ -45,17 +45,9 @@ fun StudyScreen(state: AppState, set: SetDetail, start: StudySession) {
     Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             TextButton(onClick = { state.backToSetup(set) }) { Text("← Zestaw") }
-            Text(
-                "Opanowane ${sesja.known.size} / ${set.cards.size}",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Text(set.label, style = MaterialTheme.typography.titleMedium)
         }
-        Text(set.label, style = MaterialTheme.typography.titleMedium)
-        LinearProgressIndicator(
-            progress = { if (set.cards.isEmpty()) 0f else sesja.known.size.toFloat() / set.cards.size },
-            modifier = Modifier.fillMaxWidth(),
-        )
+        PasekPostepu(sesja)
 
         val karta = sesja.current
         if (karta == null) {
@@ -66,12 +58,6 @@ fun StudyScreen(state: AppState, set: SetDetail, start: StudySession) {
             )
             return@Column
         }
-
-        Text(
-            "Karta ${sesja.index + 1} / ${sesja.queue.size}",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
 
         val pary = karta.matching?.pairs
         if (pary != null && pary.size >= 2) {
@@ -145,6 +131,39 @@ fun StudyScreen(state: AppState, set: SetDetail, start: StudySession) {
             }
         }
     }
+}
+
+/**
+ * Liczniki rundy i pasek opanowania — te same trzy liczby co w webie:
+ * miejsce w kolejce, partia (gdy uczymy się partiami) i opanowane w zestawie.
+ * Pasek jest w osobnym wierszu, bo na wąskim ekranie inaczej zostaje mu
+ * resztka szerokości po licznikach.
+ */
+@Composable
+private fun PasekPostepu(sesja: StudySession) {
+    val wszystkie = sesja.cards.size
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Licznik("Karta ${minOf(sesja.index + 1, sesja.queue.size)} / ${sesja.queue.size}")
+            if (sesja.chunkMode) {
+                Licznik("Partia ${sesja.chunkIndex + 1} / ${sesja.chunks.size}")
+            }
+            Licznik("Opanowane ${sesja.known.size} / $wszystkie")
+        }
+        LinearProgressIndicator(
+            progress = { if (wszystkie == 0) 0f else sesja.known.size.toFloat() / wszystkie },
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
+}
+
+@Composable
+private fun Licznik(text: String) {
+    Text(
+        text,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
 }
 
 @Composable
