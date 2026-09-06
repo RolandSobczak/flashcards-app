@@ -27,7 +27,7 @@ private val ciemny = darkColorScheme(
 @Composable
 fun App(settings: Settings) {
     val scope = rememberCoroutineScope()
-    val state = remember { AppState(SessionStore(settings), scope) }
+    val state = remember { AppState(SessionStore(settings), ProgressStore(settings), scope) }
 
     MaterialTheme(colorScheme = ciemny) {
         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
@@ -35,7 +35,11 @@ fun App(settings: Settings) {
                 when (val screen = state.screen) {
                     is Screen.Login -> LoginScreen(state)
                     is Screen.Sets -> SetsScreen(state)
-                    is Screen.Study -> StudyScreen(state, screen.set)
+                    // Ekrany zestawu czytają go ze stanu; brak zestawu może
+                    // się zdarzyć tylko po wylogowaniu w tle, więc wtedy lista.
+                    is Screen.Setup -> state.currentSet?.let { SetupScreen(state, it) } ?: SetsScreen(state)
+                    is Screen.Study -> state.currentSet?.let { StudyScreen(state, it, screen.session) } ?: SetsScreen(state)
+                    is Screen.Browse -> state.currentSet?.let { BrowseScreen(state, it) } ?: SetsScreen(state)
                 }
             }
         }

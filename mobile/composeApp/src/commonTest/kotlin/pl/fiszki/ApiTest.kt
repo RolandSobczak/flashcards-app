@@ -8,6 +8,8 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -101,5 +103,61 @@ class ApiTest {
         val bajty = a.imageBytes("/api/images/sets/2/0-front.png")
         assertEquals(3, bajty.size)
         assertEquals("https://serwer.test/api/images/sets/2/0-front.png", url)
+    }
+
+    @Test
+    fun zmiana_karty_wysyla_tylko_zmienione_pola() = runTest {
+        var cialo: String? = null
+        var metoda: String? = null
+        val a = api { zadanie ->
+            cialo = (zadanie.body as io.ktor.http.content.TextContent).text
+            metoda = zadanie.method.value
+            respond(
+                """{"id":5,"position":0,"front":"nowy","back":"stary","symbols":null,"matching":null,"frontImage":null,"backImage":null}""",
+                HttpStatusCode.OK,
+                headersOf(HttpHeaders.ContentType, JSON),
+            )
+        }
+        val karta = a.updateCard(5, mapOf("front" to JsonPrimitive("nowy"), "frontImage" to JsonNull))
+        assertEquals("PATCH", metoda)
+        // Klucz z null znaczy "skasuj obrazek", brak klucza — "nie ruszaj";
+        // dlatego ciało buduje wywołujący, a nie serializacja modelu.
+        assertEquals("""{"front":"nowy","frontImage":null}""", cialo)
+        assertEquals("nowy", karta.front)
+    }
+
+    @Test
+    fun kasowanie_karty_zwraca_zestaw_po_przenumerowaniu() = runTest {
+        val a = api {
+            respond(
+                """{"id":1,"slug":"z","label":"Zestaw","category":null,"cards":[
+                   {"id":2,"position":0,"front":"A","back":"a"}]}""",
+                HttpStatusCode.OK,
+                headersOf(HttpHeaders.ContentType, JSON),
+            )
+        }
+        val zestaw = a.deleteCard(3)
+        assertEquals(listOf(2), zestaw.cards.map { it.id })
+    }
+
+    @Test
+    fun kolejnosc_idzie_pelna_lista_identyfikatorow() = runTest {
+        var cialo: String? = null
+        val a = api { zadanie ->
+            cialo = (zadanie.body as io.ktor.http.content.TextContent).text
+            respond(
+                """{"id":1,"slug":"z","label":"Zestaw","category":null,"cards":[]}""",
+                HttpStatusCode.OK,
+                headersOf(HttpHeaders.ContentType, JSON),
+            )
+        }
+        a.reorderCards(1, listOf(3, 1, 2))
+        assertEquals("""{"cardIds":[3,1,2]}""", cialo)
+    }
+
+    @Test
+    fun kasowanie_zestawu_bez_tresci() = runTest {
+        val a = api { respond("", HttpStatusCode.NoContent) }
+        a.deleteSet(9)
     }
 }

@@ -18,6 +18,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -28,9 +29,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun StudyScreen(state: AppState, set: SetDetail) {
-    var sesja by remember(set.id) { mutableStateOf(StudySession.start(set.cards)) }
+fun StudyScreen(state: AppState, set: SetDetail, start: StudySession) {
+    var sesja by remember(set.id) { mutableStateOf(start) }
     var odwrocona by remember(set.id) { mutableStateOf(false) }
+
+    // Postęp zapisuje się po każdej zmianie rundy, a nie przy wyjściu —
+    // aplikację mobilną system może ubić w dowolnym momencie.
+    LaunchedEffect(sesja) { state.progress.save(set.id, sesja) }
 
     fun ocena(umiem: Boolean) {
         sesja = if (umiem) sesja.know() else sesja.skip()
@@ -39,36 +44,50 @@ fun StudyScreen(state: AppState, set: SetDetail) {
 
     Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            TextButton(onClick = state::backToSets) { Text("← Zestawy") }
-            Text(
-                "Opanowane ${sesja.known.size} / ${set.cards.size}",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            TextButton(onClick = { state.backToSetup() }) { Text("← Zestaw") }
+            Text(set.label, style = MaterialTheme.typography.titleMedium)
         }
-        Text(set.label, style = MaterialTheme.typography.titleMedium)
-        LinearProgressIndicator(
-            progress = { if (set.cards.isEmpty()) 0f else sesja.known.size.toFloat() / set.cards.size },
-            modifier = Modifier.fillMaxWidth(),
-        )
+        PasekPostepu(sesja)
 
         val karta = sesja.current
         if (karta == null) {
             RundaSkonczona(
-                opanowane = sesja.known.size,
-                wszystkie = set.cards.size,
-                wszystkoUmiem = sesja.allKnown,
-                naNowo = { sesja = sesja.nextRound(); odwrocona = false },
-                doZestawow = state::backToSets,
+                sesja = sesja,
+                dalej = { sesja = it; odwrocona = false },
+                doZestawu = { state.backToSetup() },
             )
             return@Column
         }
 
-        Text(
-            "Karta ${sesja.index + 1} / ${sesja.queue.size}",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        val pary = karta.matching?.pairs
+        if (pary != null && pary.size >= 2) {
+            MatchingCard(
+                state = state,
+                card = karta,
+                pary = pary,
+                onKnow = { ocena(true) },
+                onSkip = { ocena(false) },
+                modifier = Modifier.fillMaxWidth().weight(1f),
+            )
+            return@Column
+        }
+
+        // Karta wyboru ma własny przebieg (opcje zamiast odwracania), więc
+        // dostaje własny widok razem z przyciskami oceny.
+        val mcq = parseMcq(karta.front)
+        val poprawna = mcq?.let { correctLetter(karta.back) }
+        if (mcq != null && poprawna != null) {
+            McqCard(
+                state = state,
+                card = karta,
+                mcq = mcq,
+                poprawna = poprawna,
+                onKnow = { ocena(true) },
+                onSkip = { ocena(false) },
+                modifier = Modifier.fillMaxWidth().weight(1f),
+            )
+            return@Column
+        }
 
         Card(
             modifier = Modifier.fillMaxWidth().weight(1f).clickable { odwrocona = !odwrocona },
@@ -90,11 +109,6 @@ fun StudyScreen(state: AppState, set: SetDetail) {
                 if (odwrocona) {
                     karta.symbols?.split(';')?.map(String::trim)?.filter(String::isNotEmpty)?.forEach {
                         CardText("• $it", style = MaterialTheme.typography.bodySmall)
-                    }
-                    karta.matching?.pairs?.forEach { para ->
-                        if (para.size >= 2) {
-                            CardText("${para[0]} → ${para[1]}", style = MaterialTheme.typography.bodyMedium)
-                        }
                     }
                 }
 
@@ -119,32 +133,103 @@ fun StudyScreen(state: AppState, set: SetDetail) {
     }
 }
 
+/**
+ * Liczniki rundy i pasek opanowania — te same trzy liczby co w webie:
+ * miejsce w kolejce, partia (gdy uczymy się partiami) i opanowane w zestawie.
+ * Pasek jest w osobnym wierszu, bo na wąskim ekranie inaczej zostaje mu
+ * resztka szerokości po licznikach.
+ */
+@Composable
+private fun PasekPostepu(sesja: StudySession) {
+    val wszystkie = sesja.cards.size
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Licznik("Karta ${minOf(sesja.index + 1, sesja.queue.size)} / ${sesja.queue.size}")
+            if (sesja.chunkMode) {
+                Licznik("Partia ${sesja.chunkIndex + 1} / ${sesja.chunks.size}")
+            }
+            Licznik("Opanowane ${sesja.known.size} / $wszystkie")
+        }
+        LinearProgressIndicator(
+            progress = { if (wszystkie == 0) 0f else sesja.known.size.toFloat() / wszystkie },
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
+}
+
+@Composable
+private fun Licznik(text: String) {
+    Text(
+        text,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+}
+
 @Composable
 private fun RundaSkonczona(
-    opanowane: Int,
-    wszystkie: Int,
-    wszystkoUmiem: Boolean,
-    naNowo: () -> Unit,
-    doZestawow: () -> Unit,
+    sesja: StudySession,
+    dalej: (StudySession) -> Unit,
+    doZestawu: () -> Unit,
 ) {
+    val wszystkie = sesja.cards.size
+    val tytul: String
+    val opis: String
+    when {
+        sesja.chunkDone && sesja.lastChunk ->
+            tytul = "Wszystkie partie opanowane"
+        sesja.chunkDone ->
+            tytul = "Partia ${sesja.chunkIndex + 1} opanowana"
+        sesja.chunkMode ->
+            tytul = "Koniec rundy — partia ${sesja.chunkIndex + 1}/${sesja.chunks.size}"
+        sesja.allKnown ->
+            tytul = "Cały zestaw opanowany"
+        else ->
+            tytul = "Koniec rundy"
+    }
+    opis = when {
+        sesja.chunkDone && sesja.lastChunk -> "Czas na przegląd całego zestawu ($wszystkie kart)."
+        sesja.chunkMode -> "W tej partii opanowane ${sesja.chunkKnown} z ${sesja.currentChunk.size}. Łącznie $wszystkie kart w zestawie."
+        else -> "Opanowane ${sesja.known.size} z $wszystkie kart"
+    }
+
     Column(
         modifier = Modifier.fillMaxWidth().padding(top = 32.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        Text(tytul, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
         Text(
-            if (wszystkoUmiem) "Cały zestaw opanowany" else "Koniec rundy",
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.SemiBold,
-        )
-        Text(
-            "Opanowane $opanowane z $wszystkie kart",
+            opis,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        if (!wszystkoUmiem) {
-            Button(onClick = naNowo, modifier = Modifier.fillMaxWidth()) { Text("Kolejna runda z resztą") }
+
+        when {
+            sesja.chunkDone -> Button(
+                onClick = { dalej(sesja.nextChunk()) },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(
+                    if (sesja.lastChunk) "Pełny zestaw (${sesja.cards.size} kart)"
+                    else "Partia ${sesja.chunkIndex + 2} z ${sesja.chunks.size}",
+                )
+            }
+
+            !sesja.allKnown -> Button(
+                onClick = { dalej(sesja.nextRound()) },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(
+                    if (sesja.chunkMode) "Kolejna runda (${sesja.chunkRemaining})"
+                    else "Kolejna runda (${sesja.cards.size - sesja.known.size})",
+                )
+            }
         }
-        OutlinedButton(onClick = doZestawow, modifier = Modifier.fillMaxWidth()) { Text("Wróć do zestawów") }
+
+        OutlinedButton(onClick = { dalej(sesja.reset()) }, modifier = Modifier.fillMaxWidth()) {
+            Text("Zacznij od nowa")
+        }
+        OutlinedButton(onClick = doZestawu, modifier = Modifier.fillMaxWidth()) { Text("Wróć do zestawu") }
     }
 }

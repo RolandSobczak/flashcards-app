@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -44,17 +45,29 @@ fun SetsScreen(state: AppState) {
         }
 
         LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            items(state.sets, key = { it.id }) { zestaw ->
-                Card(
-                    modifier = Modifier.fillMaxWidth().clickable(enabled = !state.loading) { state.openSet(zestaw) },
-                ) {
-                    Column(Modifier.padding(16.dp)) {
-                        Text(zestaw.label, style = MaterialTheme.typography.titleMedium)
-                        Text(
-                            listOfNotNull(zestaw.category, "${zestaw.cardCount} kart").joinToString(" • "),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+            // Zestawy pogrupowane kategorią jak w webie — bez tego lista
+            // kilkudziesięciu zestawów jest jednym ciągiem nazw.
+            state.sets.groupBy { it.category ?: "Bez kategorii" }.forEach { (kategoria, grupa) ->
+                item(key = "kategoria:$kategoria") {
+                    Text(
+                        kategoria,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                items(grupa, key = { it.id }) { zestaw ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth().clickable(enabled = !state.loading) { state.openSet(zestaw) },
+                    ) {
+                        Column(Modifier.padding(16.dp)) {
+                            Text(zestaw.label, style = MaterialTheme.typography.titleMedium)
+                            Text(
+                                "${zestaw.cardCount} kart",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
                 }
             }
