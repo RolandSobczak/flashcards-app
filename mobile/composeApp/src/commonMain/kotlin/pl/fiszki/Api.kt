@@ -5,9 +5,12 @@ import io.ktor.client.HttpClientConfig
 import io.ktor.client.call.body
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.header
+import io.ktor.client.request.patch
 import io.ktor.client.request.post
+import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
@@ -17,6 +20,8 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
 
 /**
  * Błąd API niosący kod HTTP.
@@ -70,6 +75,36 @@ class Api(
 
     suspend fun getSet(id: Int): SetDetail =
         client.get("$baseUrl/api/sets/$id") { auth() }.orThrow().body()
+
+    /**
+     * Zmiana karty. Zmiany idą jako gotowy obiekt JSON, a nie jako model
+     * z polami nullowalnymi, bo backend rozróżnia "pola nie ruszaj" (brak
+     * klucza) od "skasuj obrazek" (klucz z null) — serializacja modelu
+     * zgubiłaby tę różnicę.
+     */
+    suspend fun updateCard(cardId: Int, zmiany: Map<String, JsonElement>): Card =
+        client.patch("$baseUrl/api/cards/$cardId") {
+            auth()
+            contentType(ContentType.Application.Json)
+            setBody(JsonObject(zmiany))
+        }.orThrow().body()
+
+    /** Kasowanie i zmiana kolejności zwracają cały zestaw — backend
+     *  przenumerowuje pozycje, więc jego odpowiedź jest jedynym pewnym
+     *  źródłem nowego układu. */
+    suspend fun deleteCard(cardId: Int): SetDetail =
+        client.delete("$baseUrl/api/cards/$cardId") { auth() }.orThrow().body()
+
+    suspend fun reorderCards(setId: Int, cardIds: List<Int>): SetDetail =
+        client.put("$baseUrl/api/sets/$setId/cards/order") {
+            auth()
+            contentType(ContentType.Application.Json)
+            setBody(CardOrderBody(cardIds))
+        }.orThrow().body()
+
+    suspend fun deleteSet(setId: Int) {
+        client.delete("$baseUrl/api/sets/$setId") { auth() }.orThrow()
+    }
 
     suspend fun logout() {
         runCatching { client.post("$baseUrl/api/auth/logout") { auth() } }

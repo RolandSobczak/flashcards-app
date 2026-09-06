@@ -52,4 +52,7 @@ data class RequestCodeBody(val email: String)
 data class VerifyBody(val email: String, val code: String)
 
 @Serializable
+data class CardOrderBody(val cardIds: List<Int>)
+
+@Serializable
 data class ApiDetail(@SerialName("detail") val detail: String? = null)
