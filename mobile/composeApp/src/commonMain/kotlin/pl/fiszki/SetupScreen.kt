@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun SetupScreen(state: AppState, set: SetDetail) {
     val liczba = set.cards.size
+    val wznowienie = remember(set.id) { wznow(state.progress.load(set.id), set.cards) }
     var rozmiarPartii by remember(set.id) { mutableStateOf(10) }
     val partie = if (rozmiarPartii > 0) (liczba + rozmiarPartii - 1) / rozmiarPartii else 0
 
@@ -49,6 +50,27 @@ fun SetupScreen(state: AppState, set: SetDetail) {
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+
+        if (wznowienie != null) {
+            Card(
+                Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+            ) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("Kontynuuj poprzednie podejście", fontWeight = FontWeight.SemiBold)
+                    Text(
+                        "Opanowane ${wznowienie.known.size} kart, w bieżącej rundzie zostało " +
+                            "${(wznowienie.queue.size - wznowienie.index).coerceAtLeast(0)}.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Button(
+                        onClick = { state.startStudy(set, wznowienie) },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) { Text("Kontynuuj") }
+                }
+            }
+        }
 
         if (liczba >= PROG_PARTII) {
             Card(

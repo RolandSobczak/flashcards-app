@@ -19,6 +19,7 @@ sealed interface Screen {
  */
 class AppState(
     private val session: SessionStore,
+    val progress: ProgressStore,
     private val scope: CoroutineScope,
     private val apiFactory: (String, () -> String?) -> Api = { url, token -> Api(url, token) },
 ) {

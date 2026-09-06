@@ -27,7 +27,7 @@ private val ciemny = darkColorScheme(
 @Composable
 fun App(settings: Settings) {
     val scope = rememberCoroutineScope()
-    val state = remember { AppState(SessionStore(settings), scope) }
+    val state = remember { AppState(SessionStore(settings), ProgressStore(settings), scope) }
 
     MaterialTheme(colorScheme = ciemny) {
         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {

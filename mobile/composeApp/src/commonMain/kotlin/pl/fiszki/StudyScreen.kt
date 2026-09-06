@@ -18,6 +18,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -31,6 +32,10 @@ import androidx.compose.ui.unit.dp
 fun StudyScreen(state: AppState, set: SetDetail, start: StudySession) {
     var sesja by remember(set.id) { mutableStateOf(start) }
     var odwrocona by remember(set.id) { mutableStateOf(false) }
+
+    // Postęp zapisuje się po każdej zmianie rundy, a nie przy wyjściu —
+    // aplikację mobilną system może ubić w dowolnym momencie.
+    LaunchedEffect(sesja) { state.progress.save(set.id, sesja) }
 
     fun ocena(umiem: Boolean) {
         sesja = if (umiem) sesja.know() else sesja.skip()
