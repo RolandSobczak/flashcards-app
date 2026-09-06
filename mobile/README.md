@@ -9,20 +9,35 @@ nie ma własnego backendu ani własnej bazy.
 ## Co działa
 
 - logowanie kodem z e-maila (te same dwa kroki co w webie),
-- lista zestawów zalogowanego użytkownika,
+- lista zestawów zalogowanego użytkownika, pogrupowana kategoriami,
+- ekran zestawu: nauka całością albo partiami po N kart, wznowienie
+  poprzedniego podejścia, przegląd wszystkich kart, skasowanie zestawu,
 - runda nauki: karta, odwrócenie, ocena „umiem" / „jeszcze nie umiem",
-  licznik opanowanych, kolejna runda z resztą,
+  liczniki (miejsce w kolejce, partia, opanowane), kolejna runda z resztą,
+  przejścia między partiami i przegląd całości po ostatniej partii,
+- **karty wyboru** — opcje a)–d) są klikalne, po odpowiedzi widać poprawną,
+  błędną i wyjaśnienie z tyłu karty; trafienie liczy się jako „umiem",
+- **karty dopasowań** — prawa kolumna startuje przetasowana i układa się ją
+  strzałkami, „Sprawdź" ocenia dopasowanie,
+- **przeglądanie i edycja kart** — lista całego materiału, zmiana treści,
+  usunięcie obrazka, przesunięcie karty, skasowanie karty,
+- zapamiętany postęp każdego zestawu (ustawienia urządzenia, odpowiednik
+  `localStorage` w webie),
 - obrazki kart (endpoint jest za bearerem, więc bajty pobiera klient API,
   a dekoduje `decodeToImageBitmap`),
 - **wzory LaTeX** — tym samym KaTeX-em co w webie, wczytanym z zasobów
   aplikacji (patrz niżej).
 
-## Czego jeszcze nie ma
+## Czego nie ma — świadomie
 
-- **karty wyboru** — pytania z odpowiedziami a/b/c/d pokazują się jako tekst,
-  bez klikalnych opcji (web parsuje je z treści karty).
+- **wgrywanie i eksport zestawów (JSON/ZIP)** — wymaga wyboru pliku
+  z urządzenia i miejsca na plik wyjściowy; zestawy powstają w webie i przez
+  serwer MCP.
+- **dodawanie obrazka do karty** — jak wyżej, brak wyboru pliku. Usunąć
+  obrazek można.
+- **widok zadań otwartych (Algebra Boole'a) i instrukcja formatu dla LLM** —
+  to materiały do czytania i pisania na dużym ekranie.
 - **tryb offline** — wszystko idzie z sieci przy każdym uruchomieniu.
-- **edycja** — kart i zestawów nie da się tu zmieniać; od tego jest web i MCP.
 
 ## Wzory
 
@@ -51,6 +66,10 @@ zasobów z `file:///android_asset/` przy `allowFileAccess = false`. Dokumentacja
 mówi, że zasoby i tak pozostają dostępne, ale to jedyne miejsce tej zmiany,
 którego nie potwierdziłem uruchomieniem. Sam dokument HTML wraz z renderowaniem
 wzorów sprawdziłem w przeglądarce.
+
+Cała reszta aplikacji też czeka na urządzenie: logika ma testy, kod się
+kompiluje i APK powstaje, ale żaden ekran nie był jeszcze klikany na
+telefonie ani w emulatorze.
 
 ## Budowanie
 
@@ -89,14 +108,23 @@ composeApp/src/
     StudySession.kt   przebieg rundy — czysta logika, bez sieci i Compose'a
     AppState.kt       stan aplikacji i przejścia między ekranami
     App.kt            motyw i wybór ekranu
-    LoginScreen.kt / SetsScreen.kt / StudyScreen.kt / RemoteImage.kt
+    CardParsing.kt    rozpoznawanie kart wyboru w treści karty
+    Progress.kt       zapis i wznawianie rundy zestawu
+    LoginScreen.kt / SetsScreen.kt / SetupScreen.kt / StudyScreen.kt
+    BrowseScreen.kt / McqCard.kt / MatchingCard.kt / RemoteImage.kt
   androidMain/        MainActivity, manifest, motyw startowy
   iosMain/            MainViewController (buduje się tylko na macOS)
   commonTest/         testy StudySession i klienta API na MockEngine
 ```
 
-Nawigacji nie ma jako biblioteki — ekrany są trzy, więc `sealed interface Screen`
-w `AppState` wystarcza i nie dokłada zależności.
+Nawigacji nie ma jako biblioteki — ekranów jest pięć i przechodzi się między
+nimi liniowo, więc `sealed interface Screen` w `AppState` wystarcza i nie
+dokłada zależności. Otwarty zestaw trzyma `AppState`, a nie ekran, bo ten sam
+zestaw ogląda ekran startowy, nauka i przeglądarka kart.
+
+Format kart (opcje `a)`–`d)`, poprawna odpowiedź jako `**a)`) siedzi w treści
+karty, więc parser w `CardParsing.kt` powtarza reguły z `src/utils.js` weba —
+gdyby klienty czytały je inaczej, ta sama karta wyglądałaby w każdym inaczej.
 
 ## Uwaga o tokenie
 
