@@ -65,7 +65,7 @@ fun SetupScreen(state: AppState, set: SetDetail) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Button(
-                        onClick = { state.startStudy(set, wznowienie) },
+                        onClick = { state.startStudy(wznowienie) },
                         modifier = Modifier.fillMaxWidth(),
                     ) { Text("Kontynuuj") }
                 }
@@ -96,7 +96,7 @@ fun SetupScreen(state: AppState, set: SetDetail) {
                         )
                     }
                     Button(
-                        onClick = { state.startStudy(set, StudySession.startChunked(set.cards, rozmiarPartii)) },
+                        onClick = { state.startStudy(StudySession.startChunked(set.cards, rozmiarPartii)) },
                         modifier = Modifier.fillMaxWidth(),
                     ) { Text("Zacznij partiami") }
                 }
@@ -104,8 +104,12 @@ fun SetupScreen(state: AppState, set: SetDetail) {
         }
 
         OutlinedButton(
-            onClick = { state.startStudy(set, StudySession.start(set.cards)) },
+            onClick = { state.startStudy(StudySession.start(set.cards)) },
             modifier = Modifier.fillMaxWidth(),
         ) { Text("Cały zestaw na raz ($liczba kart)") }
+
+        OutlinedButton(onClick = state::openBrowse, modifier = Modifier.fillMaxWidth()) {
+            Text("Wszystkie karty")
+        }
     }
 }

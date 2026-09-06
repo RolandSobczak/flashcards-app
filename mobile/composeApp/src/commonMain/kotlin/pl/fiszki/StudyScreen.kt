@@ -44,7 +44,7 @@ fun StudyScreen(state: AppState, set: SetDetail, start: StudySession) {
 
     Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            TextButton(onClick = { state.backToSetup(set) }) { Text("← Zestaw") }
+            TextButton(onClick = { state.backToSetup() }) { Text("← Zestaw") }
             Text(set.label, style = MaterialTheme.typography.titleMedium)
         }
         PasekPostepu(sesja)
@@ -54,7 +54,7 @@ fun StudyScreen(state: AppState, set: SetDetail, start: StudySession) {
             RundaSkonczona(
                 sesja = sesja,
                 dalej = { sesja = it; odwrocona = false },
-                doZestawu = { state.backToSetup(set) },
+                doZestawu = { state.backToSetup() },
             )
             return@Column
         }

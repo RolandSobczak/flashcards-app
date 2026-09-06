@@ -35,8 +35,11 @@ fun App(settings: Settings) {
                 when (val screen = state.screen) {
                     is Screen.Login -> LoginScreen(state)
                     is Screen.Sets -> SetsScreen(state)
-                    is Screen.Setup -> SetupScreen(state, screen.set)
-                    is Screen.Study -> StudyScreen(state, screen.set, screen.session)
+                    // Ekrany zestawu czytają go ze stanu; brak zestawu może
+                    // się zdarzyć tylko po wylogowaniu w tle, więc wtedy lista.
+                    is Screen.Setup -> state.currentSet?.let { SetupScreen(state, it) } ?: SetsScreen(state)
+                    is Screen.Study -> state.currentSet?.let { StudyScreen(state, it, screen.session) } ?: SetsScreen(state)
+                    is Screen.Browse -> state.currentSet?.let { BrowseScreen(state, it) } ?: SetsScreen(state)
                 }
             }
         }

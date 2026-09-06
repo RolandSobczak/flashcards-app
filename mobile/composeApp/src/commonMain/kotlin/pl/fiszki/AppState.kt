@@ -9,8 +9,9 @@ import kotlinx.coroutines.launch
 sealed interface Screen {
     data object Login : Screen
     data object Sets : Screen
-    data class Setup(val set: SetDetail) : Screen
-    data class Study(val set: SetDetail, val session: StudySession) : Screen
+    data object Setup : Screen
+    data class Study(val session: StudySession) : Screen
+    data object Browse : Screen
 }
 
 /**
@@ -30,6 +31,12 @@ class AppState(
         private set
 
     var sets by mutableStateOf<List<SetSummary>>(emptyList())
+        private set
+
+    /** Otwarty zestaw. Trzymany tu, a nie w ekranie, bo ten sam zestaw ogląda
+     *  ekran startowy, nauka i przeglądarka kart — i wszystkie muszą widzieć
+     *  te same karty po zmianie. */
+    var currentSet by mutableStateOf<SetDetail?>(null)
         private set
     var loading by mutableStateOf(false)
         private set
@@ -93,7 +100,8 @@ class AppState(
             loading = true
             error = null
             try {
-                screen = Screen.Setup(api.getSet(summary.id))
+                currentSet = api.getSet(summary.id)
+                screen = Screen.Setup
             } catch (e: ApiException) {
                 if (e.status == 401) onSessionExpired() else error = e.message
             } catch (e: Exception) {
@@ -104,15 +112,20 @@ class AppState(
         }
     }
 
-    fun startStudy(set: SetDetail, session: StudySession) {
-        screen = Screen.Study(set, session)
+    fun startStudy(session: StudySession) {
+        screen = Screen.Study(session)
     }
 
-    fun backToSetup(set: SetDetail) {
-        screen = Screen.Setup(set)
+    fun openBrowse() {
+        screen = Screen.Browse
+    }
+
+    fun backToSetup() {
+        screen = Screen.Setup
     }
 
     fun backToSets() {
+        currentSet = null
         screen = Screen.Sets
     }
 
