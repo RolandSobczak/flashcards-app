@@ -35,7 +35,8 @@ fun App(settings: Settings) {
                 when (val screen = state.screen) {
                     is Screen.Login -> LoginScreen(state)
                     is Screen.Sets -> SetsScreen(state)
-                    is Screen.Study -> StudyScreen(state, screen.set)
+                    is Screen.Setup -> SetupScreen(state, screen.set)
+                    is Screen.Study -> StudyScreen(state, screen.set, screen.session)
                 }
             }
         }

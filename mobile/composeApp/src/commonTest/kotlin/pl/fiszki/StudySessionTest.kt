@@ -61,3 +61,55 @@ class StudySessionTest {
         assertEquals(setOf(1), s.known)
     }
 }
+
+class ChunkedStudyTest {
+    private val bezTasowania: (List<Int>) -> List<Int> = { it }
+
+    @Test
+    fun dzieli_zestaw_na_partie_w_kolejnosci() {
+        val s = StudySession.startChunked(cards(5), 2, bezTasowania)
+        assertEquals(listOf(listOf(1, 2), listOf(3, 4), listOf(5)), s.chunks)
+        assertEquals(listOf(1, 2), s.queue)
+        assertTrue(s.chunkMode)
+    }
+
+    @Test
+    fun kolejna_runda_zostaje_w_biezacej_partii() {
+        var s = StudySession.startChunked(cards(4), 2, bezTasowania)
+        s = s.skip().skip()                 // partia 1 przejrzana, nic nie umiem
+        assertTrue(s.roundFinished)
+        assertFalse(s.chunkDone)
+        s = s.nextRound(bezTasowania)
+        assertEquals(listOf(1, 2), s.queue)
+    }
+
+    @Test
+    fun opanowana_partia_przechodzi_do_nastepnej() {
+        var s = StudySession.startChunked(cards(4), 2, bezTasowania)
+        s = s.know().know()
+        assertTrue(s.chunkDone)
+        s = s.nextChunk(bezTasowania)
+        assertEquals(1, s.chunkIndex)
+        assertEquals(listOf(3, 4), s.queue)
+    }
+
+    @Test
+    fun po_ostatniej_partii_przeglad_calosci_od_zera() {
+        var s = StudySession.startChunked(cards(4), 2, bezTasowania)
+        s = s.know().know().nextChunk(bezTasowania).know().know()
+        assertTrue(s.chunkDone)
+        assertTrue(s.lastChunk)
+        s = s.nextChunk(bezTasowania)
+        assertFalse(s.chunkMode)
+        assertEquals(listOf(1, 2, 3, 4), s.queue)
+        assertEquals(emptySet(), s.known)
+    }
+
+    @Test
+    fun zacznij_od_nowa_wychodzi_z_partii() {
+        val s = StudySession.startChunked(cards(4), 2, bezTasowania).know().reset(bezTasowania)
+        assertFalse(s.chunkMode)
+        assertEquals(emptySet(), s.known)
+        assertEquals(listOf(1, 2, 3, 4), s.queue)
+    }
+}

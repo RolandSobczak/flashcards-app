@@ -9,11 +9,12 @@ import kotlinx.coroutines.launch
 sealed interface Screen {
     data object Login : Screen
     data object Sets : Screen
-    data class Study(val set: SetDetail) : Screen
+    data class Setup(val set: SetDetail) : Screen
+    data class Study(val set: SetDetail, val session: StudySession) : Screen
 }
 
 /**
- * Cały stan aplikacji w jednym miejscu. Ekranów jest trzy, więc biblioteka
+ * Cały stan aplikacji w jednym miejscu. Ekranów jest kilka, więc biblioteka
  * nawigacji byłaby tu cięższa od problemu, który rozwiązuje.
  */
 class AppState(
@@ -91,7 +92,7 @@ class AppState(
             loading = true
             error = null
             try {
-                screen = Screen.Study(api.getSet(summary.id))
+                screen = Screen.Setup(api.getSet(summary.id))
             } catch (e: ApiException) {
                 if (e.status == 401) onSessionExpired() else error = e.message
             } catch (e: Exception) {
@@ -100,6 +101,14 @@ class AppState(
                 loading = false
             }
         }
+    }
+
+    fun startStudy(set: SetDetail, session: StudySession) {
+        screen = Screen.Study(set, session)
+    }
+
+    fun backToSetup(set: SetDetail) {
+        screen = Screen.Setup(set)
     }
 
     fun backToSets() {
