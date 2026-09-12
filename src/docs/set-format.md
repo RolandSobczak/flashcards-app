@@ -78,13 +78,17 @@ Wartość `frontImage`/`backImage` może być jedną z poniższych form:
 3. **Zewnętrzny URL** — zaczyna się od `http://` lub `https://`,
    zapisywany "jak jest" (bez pobierania na serwer):
    `"https://example.com/wykres.png"`
-4. **Ścieżka lokalna** — zaczyna się od `/` lub `./`, przydatne tylko
-   jeśli plik faktycznie jest hostowany przez frontend (np. w
-   `public/`): `"/images/wykres.png"`
-5. **Ścieżka względna w archiwum ZIP** — tylko przy imporcie z pliku
+4. **Ścieżka względna w archiwum ZIP** — tylko przy imporcie z pliku
    `.zip` (sekcja 7): `"images/0-front.png"`
 
 Jeśli karta nie ma obrazka, pole można pominąć albo ustawić na `null`.
+
+Ścieżka do pliku hostowanego przez frontend (`"/images/wykres.png"`,
+`"./rysunek.png"`) **nie jest przyjmowana** — import kończy się błędem 400.
+Taki zestaw wyglądał na poprawny, ale obrazek zostawał na jednym serwerze:
+po wyeksportowaniu i wczytaniu gdzie indziej aplikacja dostawała pod tym
+adresem swój własny HTML i pokazywała zepsuty obrazek. Obrazek ma jechać
+razem z zestawem — jako plik w paczce albo dane w JSON-ie.
 
 ## 5. Pytanie zamknięte / ABCD (MCQ)
 
