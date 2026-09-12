@@ -52,6 +52,9 @@ jobs:
           [ "$porty" = "1" ] || { echo "::error::oczekiwano jednego publikowanego portu, jest $porty"; grep 'published:' /tmp/scalona.yml; exit 1; }
           grep -q 'published: "8080"' /tmp/scalona.yml || { echo "::error::port 8080 nie jest publikowany"; exit 1; }
 
+      - name: Odwołania do obrazków — kontrola własna
+        run: python3 backend/imageref.py
+
       - name: Serwer MCP — kontrola własna
         run: python3 mcp-server/server.py --self-check
 

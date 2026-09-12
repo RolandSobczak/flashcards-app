@@ -10,6 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from . import storage
+from .imageref import obraz_nie_do_wczytania
 from .auth import get_current_user
 from .db import get_db
 from .models import CardModel, SetModel, UserModel
@@ -66,11 +67,15 @@ def _card_out(card: CardModel) -> CardOut:
 def _store_image(
     value: str | None, set_id: int, position: int, side: str, zf: zipfile.ZipFile | None = None
 ) -> tuple[str | None, str | None]:
-    """Returns (object_key, external_url) — embedded image data (or an image
-    file referenced by a relative path inside an imported zip) is pushed to
-    MinIO (object_key set); anything else that isn't empty (an http URL, a
-    local /public path, ...) is kept as-is (external_url set) so it isn't
-    silently dropped."""
+    """Zwraca (klucz_obiektu, adres_zewnetrzny).
+
+    Dane obrazka w treści i pliki z paczki lądują w MinIO (klucz_obiektu),
+    adres http zostaje adresem (adres_zewnetrzny). Odwołanie, którego nie da
+    się wczytać — ścieżka do pliku statycznego frontu albo nazwa, której
+    w paczce nie ma — kończy zapis błędem 400, zamiast zapisać się jako adres
+    do niczego. Taki zestaw wyglądał na poprawny aż do momentu, w którym ktoś
+    otworzył go na innym serwerze i zobaczył zepsuty obrazek.
+    """
     if zf is not None and value and value in zf.namelist():
         content_type = storage.content_type_for_filename(value)
         key = storage.object_key(set_id, position, side, content_type)
@@ -82,6 +87,16 @@ def _store_image(
         key = storage.object_key(set_id, position, side, decoded.content_type)
         storage.upload_image(key, decoded)
         return key, None
+
+    if obraz_nie_do_wczytania(value, rozpoznany=False):
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Karta {position + 1} ({side}): nie udało się wczytać obrazka „{value}”. "
+                "Obraz musi być plikiem w paczce ZIP, danymi (data: albo base64) "
+                "albo adresem http(s)."
+            ),
+        )
     return None, (value or None)
 
 
