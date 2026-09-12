@@ -65,3 +65,17 @@ export function reorderCards(setId, cardIds) {
     body: JSON.stringify({ cardIds }),
   }).then(handle)
 }
+
+// Logowanie narzędzia bez przeglądarki: narzędzie zakłada żądanie i czeka,
+// człowiek zatwierdza je tutaj, w już zalogowanej sesji.
+export function deviceInfo(userCode) {
+  return authFetch(`/api/auth/device/kod/${encodeURIComponent(userCode)}`).then(handle)
+}
+
+export function approveDevice(userCode) {
+  return authFetch(`/api/auth/device/kod/${encodeURIComponent(userCode)}/approve`, { method: 'POST' }).then(handle)
+}
+
+export function denyDevice(userCode) {
+  return authFetch(`/api/auth/device/kod/${encodeURIComponent(userCode)}/deny`, { method: 'POST' }).then(handle)
+}

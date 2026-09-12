@@ -24,5 +24,9 @@ class Settings(BaseSettings):
     login_code_max_attempts: int = 5
     session_ttl_days: int = 30
 
+    # Tyle czasu ma człowiek na zatwierdzenie logowania narzędzia w przeglądarce
+    # i tyle samo narzędzie na odebranie tokenu po zatwierdzeniu.
+    device_auth_ttl_minutes: int = 10
+
 
 settings = Settings()

@@ -9,6 +9,7 @@ import StatsBar from './components/StatsBar'
 import FlashCard from './components/FlashCard'
 import RoundComplete from './components/RoundComplete'
 import BrowseView from './components/BrowseView'
+import DeviceApproval from './components/DeviceApproval'
 import FormatDocsView from './components/FormatDocsView'
 import { shuffle } from './utils'
 import { CHUNK_THRESHOLD } from './constants'
@@ -51,6 +52,13 @@ export default function App() {
   const user = getUser()
 
   const [persisted] = useState(loadSession)
+
+  // Link z narzędzia: /?autoryzacja=XXXX-XXXX. Czytane raz, przy wejściu —
+  // decyzja zdejmuje parametr z adresu, żeby odświeżenie strony nie wracało
+  // do ekranu zatwierdzania.
+  const [deviceCode, setDeviceCode] = useState(
+    () => new URLSearchParams(window.location.search).get('autoryzacja'),
+  )
 
   const [cards, setCards] = useState(persisted?.cards ?? [])
   const [knownIds, setKnownIds] = useState(() => new Set(persisted?.knownIds ?? []))
@@ -280,6 +288,22 @@ export default function App() {
   // Gate the whole app behind a session. A missing/expired token (the latter
   // cleared by authFetch on a 401) drops back here to the login screen.
   if (!token) return <Login />
+
+  // Zatwierdzanie wymaga sesji, więc stoi za bramką logowania — po zalogowaniu
+  // parametr wciąż jest w adresie i ekran pojawia się sam.
+  if (deviceCode) {
+    return (
+      <div className="app">
+        <DeviceApproval
+          code={deviceCode}
+          onDone={() => {
+            window.history.replaceState({}, '', window.location.pathname)
+            setDeviceCode(null)
+          }}
+        />
+      </div>
+    )
+  }
 
   return (
     <div className="app">

@@ -1519,3 +1519,59 @@
     height: 38px;
   }
 }
+
+
+/* Zatwierdzanie logowania narzędzia (link /?autoryzacja=KOD). */
+.device-approval {
+  max-width: 520px;
+  margin: 48px auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  text-align: center;
+}
+
+.device-approval-icon {
+  color: var(--accent, #6366f1);
+}
+
+.device-approval-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 28px;
+  letter-spacing: 4px;
+  padding: 10px 18px;
+  border-radius: 10px;
+  background: rgba(99, 102, 241, 0.12);
+}
+
+.device-approval-meta {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 4px 12px;
+  margin: 0;
+  font-size: 14px;
+}
+
+.device-approval-meta dt {
+  color: #9090b0;
+}
+
+.device-approval-meta dd {
+  margin: 0;
+  text-align: left;
+}
+
+.device-approval-warn {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #9090b0;
+  margin: 0;
+}
+
+.device-approval-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
