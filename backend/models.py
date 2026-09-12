@@ -48,6 +48,35 @@ class SessionModel(Base):
     user: Mapped["UserModel"] = relationship()
 
 
+class DeviceAuthModel(Base):
+    """Żądanie logowania narzędzia, zatwierdzane w przeglądarce.
+
+    Token nie leży tu nawet na chwilę: przy zatwierdzeniu zapisuje się tylko,
+    kto zatwierdził, a sesja powstaje dopiero gdy narzędzie po nią przyjdzie.
+    Dzięki temu w bazie nie ma momentu, w którym stoi gotowy bearer.
+    """
+
+    __tablename__ = "device_auths"
+    __table_args__ = (
+        UniqueConstraint("user_code", name="uq_device_auths_user_code"),
+        UniqueConstraint("device_code_hash", name="uq_device_auths_device_code_hash"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_code: Mapped[str] = mapped_column(Text, index=True)
+    device_code_hash: Mapped[str] = mapped_column(Text, index=True)
+    client_name: Mapped[str] = mapped_column(Text)
+    approved_user_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=True
+    )
+    approved_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    denied_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    expires_at: Mapped[datetime]
+    created_at: Mapped[datetime] = mapped_column(default=_utcnow)
+
+    approved_user: Mapped["UserModel | None"] = relationship()
+
+
 class SetModel(Base):
     __tablename__ = "sets"
     __table_args__ = (UniqueConstraint("slug", name="uq_sets_slug"),)

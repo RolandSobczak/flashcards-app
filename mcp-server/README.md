@@ -58,7 +58,22 @@ Zależności ciągnie `uv` z nagłówka PEP 723 w samym skrypcie, więc nie trze
 niczego instalować ani zakładać wirtualnego środowiska.
 
 W repozytorium leży `.mcp.json`, który Claude Code podchwytuje sam. Wystarczy
-token:
+token — najprościej wziąć go z logowania przez przeglądarkę:
+
+```bash
+python3 mcp-server/server.py --login
+# Otwórz i zatwierdź: https://.../?autoryzacja=XXXX-XXXX
+# Kod na ekranie powinien brzmieć: XXXX-XXXX
+# ...
+# FLASHCARDS_TOKEN=...
+
+export FLASHCARDS_TOKEN='...'
+```
+
+Serwer zakłada żądanie, wypisuje link, a Ty zatwierdzasz je w zalogowanej
+przeglądarce — po zatwierdzeniu serwer odbiera **własny** token sesji. Kod
+z maila się tu nie nada, bo dostaje go człowiek, nie proces. Nic nie trzeba
+przeklejać z `localStorage`, choć to nadal działa:
 
 ```bash
 export FLASHCARDS_TOKEN='...'      # localStorage['flashcards.authToken'] z przeglądarki

@@ -81,6 +81,28 @@ fight over ports 8000/5432/9000.
 - `DELETE /api/sets/{id}` — removes the set (cards cascade) and its images.
 - `GET /api/images/{key}` — streams an image object out of MinIO.
 
+## Device login (tools without a browser)
+
+A CLI or an MCP server cannot receive the e-mailed login code — a human does.
+So the tool asks for access and a signed-in human approves it in the browser:
+
+- `POST /api/auth/device` — no auth. Body `{"name": "..."}`. Returns
+  `deviceCode` (secret, kept by the tool), `userCode` (short, shown to the
+  human, format `XXXX-XXXX`), `verifyPath` (`/?autoryzacja=XXXX-XXXX`),
+  `expiresIn` and `interval`.
+- `GET /api/auth/device/{deviceCode}` — no auth, polled by the tool. Returns
+  `pending`, `denied`, `expired`, or `approved` together with a fresh session
+  token. The token is minted at pickup and handed out exactly once; the
+  request row is deleted with the answer, so a bearer never sits in the
+  database waiting.
+- `GET /api/auth/device/kod/{userCode}` — session required. What the approval
+  screen shows: tool name, state, when it was asked for.
+- `POST /api/auth/device/kod/{userCode}/approve` / `.../deny` — session
+  required. Approval records *who* approved, nothing else.
+
+Requests live `device_auth_ttl_minutes` (10) — that is both the window for the
+human to decide and the window for the tool to collect the token.
+
 ## Schema migrations
 
 Models live in `models.py`. After changing them, generate a migration:

@@ -55,6 +55,9 @@ jobs:
       - name: Odwołania do obrazków — kontrola własna
         run: python3 backend/imageref.py
 
+      - name: Logowanie urządzenia — kontrola własna
+        run: python3 backend/deviceflow.py
+
       - name: Serwer MCP — kontrola własna
         run: python3 mcp-server/server.py --self-check
 
@@ -88,6 +91,17 @@ jobs:
           kod=$(curl -s -o /dev/null -w '%{http_code}' -X DELETE http://127.0.0.1:8080/api/cards/1)
           echo "DELETE /api/cards/1 bez sesji: $kod"
           [ "$kod" = "401" ] || { echo "::error::kasowanie karty bez sesji powinno zwrócić 401, zwróciło $kod"; exit 1; }
+          # Założenie żądania logowania urządzenia jest z zamysłu bez sesji —
+          # samo żądanie niczego nie daje, dostęp powstaje dopiero przy
+          # zatwierdzeniu w przeglądarce. Zatwierdzenie już sesji wymaga.
+          kod=$(curl -s -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' \
+            -d '{"name":"Kontrola"}' http://127.0.0.1:8080/api/auth/device)
+          echo "POST /api/auth/device bez sesji: $kod"
+          [ "$kod" = "201" ] || { echo "::error::start logowania urządzenia powinien zwrócić 201, zwrócił $kod"; exit 1; }
+          kod=$(curl -s -o /dev/null -w '%{http_code}' -X POST http://127.0.0.1:8080/api/auth/device/kod/ABCD-EFGH/approve)
+          echo "POST /api/auth/device/kod/.../approve bez sesji: $kod"
+          [ "$kod" = "401" ] || { echo "::error::zatwierdzanie urządzenia bez sesji powinno zwrócić 401, zwróciło $kod"; exit 1; }
+
           kod=$(curl -s -o /dev/null -w '%{http_code}' -X PUT -H 'Content-Type: application/json' \
             -d '{"cardIds":[1]}' http://127.0.0.1:8080/api/sets/1/cards/order)
           echo "PUT /api/sets/1/cards/order bez sesji: $kod"

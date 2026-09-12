@@ -45,6 +45,31 @@ class UserOut(BaseModel):
     email: str
 
 
+class DeviceStartIn(BaseModel):
+    name: str | None = None
+
+
+class DeviceStartOut(BaseModel):
+    deviceCode: str
+    userCode: str
+    verifyPath: str
+    expiresIn: int
+    interval: int
+
+
+class DeviceStatusOut(BaseModel):
+    status: str
+    token: str | None = None
+    user: UserOut | None = None
+
+
+class DeviceInfoOut(BaseModel):
+    userCode: str
+    clientName: str
+    status: str
+    createdAt: datetime
+
+
 class AuthOut(BaseModel):
     token: str
     user: UserOut

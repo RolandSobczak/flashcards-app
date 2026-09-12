@@ -12,8 +12,12 @@ MinIO bezpośrednio, więc obowiązują te same reguły własności i autoryzacj
 Konfiguracja przez zmienne środowiskowe:
 
     FLASHCARDS_URL     adres aplikacji (domyślnie http://localhost:8000)
-    FLASHCARDS_TOKEN   token sesji; w przeglądarce leży w
-                       localStorage['flashcards.authToken']
+    FLASHCARDS_TOKEN   token sesji; najprościej wziąć go z
+
+                           python3 mcp-server/server.py --login
+
+                       które pokazuje link do zatwierdzenia w przeglądarce
+                       i po zatwierdzeniu wypisuje własny token
 
 Uruchomienie samodzielne (bez instalowania czegokolwiek):
 
@@ -29,6 +33,7 @@ import json
 import mimetypes
 import os
 import sys
+import time
 import urllib.error
 import urllib.request
 import uuid
@@ -82,6 +87,48 @@ def _request(method, path, *, data=None, headers=None):
         raise ApiError(f"HTTP {exc.code} z {path}: {detail}") from exc
     except urllib.error.URLError as exc:
         raise ApiError(f"Brak połączenia z {BASE_URL}: {exc.reason}") from exc
+
+
+def _bez_tokenu(method, path, payload=None):
+    """Żądanie bez autoryzacji — do logowania, zanim token w ogóle istnieje."""
+    data = json.dumps(payload).encode("utf-8") if payload is not None else None
+    req = urllib.request.Request(f"{BASE_URL}{path}", data=data, method=method)
+    if data is not None:
+        req.add_header("Content-Type", "application/json")
+    try:
+        with urllib.request.urlopen(req, timeout=TIMEOUT) as res:
+            body = res.read()
+            return json.loads(body) if body else None
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode("utf-8", "replace")[:400]
+        raise ApiError(f"HTTP {exc.code} z {path}: {detail}") from exc
+    except urllib.error.URLError as exc:
+        raise ApiError(f"Brak połączenia z {BASE_URL}: {exc.reason}") from exc
+
+
+def login(nazwa="Serwer MCP Fiszek", wypisz=print, spij=time.sleep):
+    """Logowanie przez zatwierdzenie w przeglądarce.
+
+    Kodu z maila nie da się tu użyć — dostaje go człowiek, nie proces. Więc
+    proces zakłada żądanie, człowiek zatwierdza je w zalogowanej przeglądarce,
+    a token przychodzi tutaj. Zwraca token albo rzuca ApiError.
+    """
+    start = _bez_tokenu("POST", "/api/auth/device", {"name": nazwa})
+    wypisz(f"Otwórz i zatwierdź: {BASE_URL}{start['verifyPath']}")
+    wypisz(f"Kod na ekranie powinien brzmieć: {start['userCode']}")
+
+    koniec = time.monotonic() + start["expiresIn"]
+    while time.monotonic() < koniec:
+        spij(start["interval"])
+        stan = _bez_tokenu("GET", f"/api/auth/device/{start['deviceCode']}")
+        if stan["status"] == "approved":
+            wypisz(f"Zatwierdzone przez {stan['user']['email']}.")
+            return stan["token"]
+        if stan["status"] == "denied":
+            raise ApiError("Żądanie odrzucone w przeglądarce.")
+        if stan["status"] == "expired":
+            raise ApiError("Żądanie wygasło, zacznij od nowa.")
+    raise ApiError("Nikt nie zatwierdził żądania na czas.")
 
 
 def build_multipart(fields, filename, file_bytes, field_name="file", content_type="application/json"):
@@ -277,6 +324,33 @@ def self_check():
             raise AssertionError(f"as_image_value przepuścił {bad!r}")
     os.unlink(tmp)
 
+    # Logowanie przez przeglądarkę: pętla czeka na decyzję, a nie kończy się
+    # po pierwszym "pending". Sieć podstawiona, bo self-check jej nie dotyka.
+    global _bez_tokenu
+    prawdziwe = _bez_tokenu
+    try:
+        odpowiedzi = [
+            {"deviceCode": "dev", "userCode": "ABCD-EFGH", "verifyPath": "/?autoryzacja=ABCD-EFGH",
+             "expiresIn": 60, "interval": 0},
+            {"status": "pending"},
+            {"status": "approved", "token": "tok", "user": {"id": 1, "email": "ktos@example.test"}},
+        ]
+        _bez_tokenu = lambda *a, **kw: odpowiedzi.pop(0)  # noqa: E731
+        assert login(wypisz=lambda *_: None, spij=lambda _: None) == "tok"
+
+        odpowiedzi = [
+            {"deviceCode": "dev", "userCode": "ABCD-EFGH", "verifyPath": "/", "expiresIn": 60, "interval": 0},
+            {"status": "denied"},
+        ]
+        try:
+            login(wypisz=lambda *_: None, spij=lambda _: None)
+        except ApiError:
+            pass
+        else:  # pragma: no cover
+            raise AssertionError("odmowa przeszła jako sukces")
+    finally:
+        _bez_tokenu = prawdziwe
+
     blad = _guard(lambda: (_ for _ in ()).throw(ApiError("Zażółć gęślą jaźń")))
     blad.encode("ascii")
     assert json.loads(blad)["error"] == "Zażółć gęślą jaźń"
@@ -412,5 +486,13 @@ def main():
 if __name__ == "__main__":
     if "--self-check" in sys.argv:
         self_check()
+    elif "--login" in sys.argv:
+        try:
+            token = login()
+        except ApiError as exc:
+            print(exc, file=sys.stderr)
+            sys.exit(1)
+        print()
+        print("FLASHCARDS_TOKEN=" + token)
     else:
         main()
