@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Check, RotateCcw } from 'lucide-react'
+import { Check, RotateCcw, ArrowRight } from 'lucide-react'
 import LatexContent from '../LatexContent'
 import { useImageUrl, parseMCQ, getCorrectLetter } from '../utils'
 import MCQCard from './MCQCard'
@@ -36,6 +36,7 @@ function CardFace({ side, card }) {
 export default function FlashCard({ card, onKnow, onSkip }) {
   const [flipped, setFlipped] = useState(false)
   const [animating, setAnimating] = useState(false)
+  const [skipped, setSkipped] = useState(false)
 
   const mcq = parseMCQ(card.front)
   const correctLetter = mcq ? getCorrectLetter(card.back) : null
@@ -49,7 +50,7 @@ export default function FlashCard({ card, onKnow, onSkip }) {
   }
 
   function handleFlip() {
-    if (animating) return
+    if (animating || skipped) return
     setAnimating(true)
     setTimeout(() => {
       setFlipped(f => !f)
@@ -59,12 +60,19 @@ export default function FlashCard({ card, onKnow, onSkip }) {
 
   function handleKnow() {
     setFlipped(false)
+    setSkipped(false)
     onKnow()
   }
 
-  function handleSkip() {
-    setFlipped(false)
-    onSkip()
+  function handleSkipClick() {
+    if (skipped) {
+      setFlipped(false)
+      setSkipped(false)
+      onSkip()
+      return
+    }
+    setSkipped(true)
+    setFlipped(true)
   }
 
   return (
@@ -77,14 +85,23 @@ export default function FlashCard({ card, onKnow, onSkip }) {
       </div>
 
       <div className="card-actions">
-        <button className="btn-skip" onClick={handleSkip}>
-          <RotateCcw size={17} aria-hidden="true" />
-          Jeszcze nie umiem
-        </button>
-        <button className="btn-know" onClick={handleKnow} disabled={!flipped}>
-          <Check size={17} aria-hidden="true" />
-          Umiem
-        </button>
+        {skipped ? (
+          <button className="btn-skip" onClick={handleSkipClick}>
+            Dalej
+            <ArrowRight size={17} aria-hidden="true" />
+          </button>
+        ) : (
+          <>
+            <button className="btn-skip" onClick={handleSkipClick}>
+              <RotateCcw size={17} aria-hidden="true" />
+              Jeszcze nie umiem
+            </button>
+            <button className="btn-know" onClick={handleKnow} disabled={!flipped}>
+              <Check size={17} aria-hidden="true" />
+              Umiem
+            </button>
+          </>
+        )}
       </div>
     </div>
   )
